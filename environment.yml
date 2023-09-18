@@ -1,0 +1,16 @@
+name: eQTLGenHeritabilityEstimation
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - conda-forge::gcc_linux-64=7.3.0
+  - conda-forge::cairo=1.16.0
+  - conda-forge::r-data.table=1.14.0
+  - conda-forge::r-dplyr=1.0.7
+  - conda-forge::r-ggplot2=3.3.5
+  - conda-forge::r-cairo=1.5_12.2
+  - conda-forge::r-bigreadr
+  - conda-forge::r-remotes=2.4.2
+  - conda-forge::mscorefonts=0.0.1
+  - conda-forge::r-devtools
+  

@@ -1,0 +1,8 @@
+benchmark
+work
+test_output
+*_test.sh
+data
+.nextflow
+.DS_Store
+.nextflow*
