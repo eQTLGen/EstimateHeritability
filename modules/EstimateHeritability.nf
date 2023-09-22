@@ -35,11 +35,12 @@ process EstimateHeritability {
 
 
 process EstimateHeritabilityLdsc {
+    container 'quay.io/cawarmerdam/ldsc:v0.1'
 
-    tag "$gene"
+    tag "ldsc_${annot}_${gene}"
 
     input:
-      tuple val(gene), path(sumstats)
+      tuple val(gene), val(annot), path(sumstats)
       path ld_ch
 
     output:
