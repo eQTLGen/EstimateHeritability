@@ -220,13 +220,13 @@ def main(argv=None):
     # Identify genes that have a cis-effect
     cis = np.logical_and(
         eqtls_annotated.chromosome_variant == eqtls_annotated.chromosome_gene,
-        np.logical_or((eqtls_annotated.bp_variant - eqtls_annotated.start).abs() < 1*10**6,
-                      (eqtls_annotated.bp_variant - eqtls_annotated.end).abs() < 1*10**6))
+        np.logical_or((eqtls_annotated.bp - eqtls_annotated.start).abs() < 1*10**6,
+                      (eqtls_annotated.bp - eqtls_annotated.end).abs() < 1*10**6))
 
     trans = ~np.logical_and(
         eqtls_annotated.chromosome_variant == eqtls_annotated.chromosome_gene,
-        np.logical_or((eqtls_annotated.bp_variant - eqtls_annotated.start).abs() < 5*10**6,
-                      (eqtls_annotated.bp_variant - eqtls_annotated.end).abs() < 5*10**6))
+        np.logical_or((eqtls_annotated.bp - eqtls_annotated.start).abs() < 5*10**6,
+                      (eqtls_annotated.bp - eqtls_annotated.end).abs() < 5*10**6))
 
     ldsc_selector = {"variant": "SNP", "sample_size": "N", "z_score": "Z", "allele_eff": "A1", "allele_ref": "A2"}
 

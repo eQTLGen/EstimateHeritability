@@ -42,6 +42,7 @@ process EstimateHeritabilityLdsc {
     input:
       tuple val(gene), val(annot), path(sumstats)
       path ld_ch
+      path ldsc_source
 
     output:
       path '*_h2.txt'
@@ -49,7 +50,7 @@ process EstimateHeritabilityLdsc {
     shell:
     // Should first limit to the trans variants
     '''
-    ldsc.py \
+    !{ldsc_source}/ldsc.py \
     --h2 !{sumstats} \
     --ref-ld-chr !{ld_ch} \
     --w-ld-chr !{ld_ch} \

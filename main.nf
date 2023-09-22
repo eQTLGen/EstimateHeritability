@@ -63,6 +63,7 @@ Channel.fromPath(params.input).collect().set { input_parquet_ch }
 Channel.fromPath(params.genes).splitCsv(header: ['gene']).map { row -> "${row.gene}" } .set { genes_ch }
 Channel.fromPath(params.variant_reference).collect().set { variant_reference_ch }
 Channel.fromPath(params.gene_reference).collect().set { gene_reference_ch }
+Channel.fromPath(params.ldsc_source).collect().set { ldsc_source_ch }
 
 variants_ch = file(params.variants)
 
@@ -115,7 +116,7 @@ workflow {
     results_ch_concatenated = results_ch.cis.concat(results_ch.trans)
 
     // Run Heritability estimates
-    heritability_estimates = EstimateHeritabilityLdsc(results_ch_concatenated, ld_ch)
+    heritability_estimates = EstimateHeritabilityLdsc(results_ch_concatenated, ld_ch, ldsc_source_ch)
 
     // WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
 }
