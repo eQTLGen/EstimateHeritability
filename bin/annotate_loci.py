@@ -148,7 +148,7 @@ class GtfParser:
                 if not line.startswith('#'):
                     fields = line.strip().split('\t')
                     if fields[2] == 'gene':
-                        attributes = dict(item.split(' ') for item in fields[8].split(';') if ' ' in item)
+                        attributes = dict(item.strip().split(' ') for item in fields[8].split(';') if ' ' in item.strip())
                         genes.append({'gene_id': attributes['gene_id'],
                                       'chromosome': fields[0],
                                       'start': int(fields[3]),
