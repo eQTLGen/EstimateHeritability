@@ -49,10 +49,7 @@ Mandatory arguments:
 
 }
 
-params.maf_table = 'NO_FILE'
-params.bed = 'NO_FILE'
 params.variants = 'NO_FILE'
-params.inclusion_step_output = 'NO_FILE'
 params.cols = '+z_score'
 params.output
 
@@ -128,7 +125,7 @@ workflow {
     // Run Heritability estimates
     heritability_estimates = EstimateHeritability(results_ch_concatenated, ld_ch)
 
-    WriteOutRes(heritability_estimates.out.collectFile(name:'result.txt', sort: true, keepHeader: true))
+    WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
 }
 
 workflow.onComplete {
