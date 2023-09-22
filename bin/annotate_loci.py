@@ -137,6 +137,28 @@ class GencodeParser:
         return df[['gene_id', 'chromosome', 'start', 'end']].drop_duplicates(keep='first', subset=["gene_id"])
 
 
+class GtfParser:
+    def __init__(self, filename):
+        self.filename = filename
+        self.df = self.parse()
+    def parse(self):
+        with gzip.open(self.filename, 'rt') as f:
+            for line in f:
+                if not line.startswith('#'):
+                    fields = line.strip().split('\t')
+                    if fields[2] == 'gene':
+                        attributes = dict(item.split(' ') for item in fields[8].split(';') if ' ' in item)
+                        genes.append({'gene_id': attributes['gene_id'],
+                                      'chromosome': fields[0],
+                                      'start': int(fields[3]),
+                                      'end': int(fields[4])})
+                df = pd.DataFrame(genes).astype({'start': 'Int64', 'end': 'Int64'})
+        df['chromosome'] = df['chromosome'].str.lstrip('chr').replace({"M": "25", "X": "23", "Y": "24"}).astype('Int64')
+        df['gene_id'] = df['gene_id'].str.split('.').str[0]
+        print(df['chromosome'].unique())
+        return df[['gene_id', 'chromosome', 'start', 'end']].drop_duplicates(keep='first', subset=["gene_id"])
+
+
 # Functions
 
 # Main
@@ -151,8 +173,8 @@ def main(argv=None):
                         help='Path to the table containing eQTL results')
     parser.add_argument('--variant-reference', dest='variant_reference', required=True,
                         help='Path to the table containing all SNPs from a reference panel')
-    parser.add_argument('--gene-gff', dest='gene_gff', required=True,
-                        help='Path to the Gencode GFF3 file')
+    parser.add_argument('--gene-ref', dest='gene_ref', required=True,
+                        help='Path to a GTF or GFF3 file')
     parser.add_argument('--out-prefix', dest='out_prefix', required=True,
                         help='Prefix to use for output file names')
 
@@ -169,9 +191,9 @@ def main(argv=None):
     print("Variant reference loaded:")
     print(variant_reference.head())
 
-    print("Loading gene annotations from '{}'".format(args.gene_gff))
+    print("Loading gene annotations from '{}'".format(args.gene_ref))
 
-    gencode_parser = GencodeParser(args.gene_gff)
+    gencode_parser = GtfParser(args.gene_ref)
     gene_dataframe = gencode_parser.df
 
     eqtls = pd.read_csv(args.input_file, sep='\t')
