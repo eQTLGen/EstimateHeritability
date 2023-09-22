@@ -44,7 +44,7 @@ process EstimateHeritabilityLdsc {
       path ld_ch
 
     output:
-      tuple val(gene), path('*_h2.txt')
+      path '*_h2.txt'
 
     shell:
     // Should first limit to the trans variants
