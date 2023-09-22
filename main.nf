@@ -64,8 +64,9 @@ Channel.fromPath(params.genes).splitCsv(header: ['gene']).map { row -> "${row.ge
 Channel.fromPath(params.variant_reference).collect().set { variant_reference_ch }
 Channel.fromPath(params.gene_reference).collect().set { gene_reference_ch }
 
-bed_file_ch = file(params.bed)
 variants_ch = file(params.variants)
+
+ld_ch = Channel.fromPath(params.ld_w_dir, type: 'dir').collect()
 
 gene_chunk_size=1
 
@@ -95,14 +96,6 @@ log.info summary.collect { k,v -> "${k.padRight(21)}: $v" }.join("\n")
 log.info "================================================="
 
 
-// Process input file paths
-
-//Default parameters
-Channel.fromPath(params.input).collect().set { input_parquet_ch }
-Channel.fromPath(params.genes).splitCsv(header: ['gene']).map { row -> "${row.gene}" } .set { genes_ch }
-
-ld_ch = Channel.fromPath(params.ld_w_dir, type: 'dir').collect()
-
 workflow {
     // Buffer genes
     genes_buffered_ch = genes_ch.collate(gene_chunk_size)
@@ -114,7 +107,6 @@ workflow {
                def key = file.name.toString().tokenize('.').get(1)
                return tuple(key, file) }
         groupTuple()
-    }
 
     // Split summary statistics in cis and trans regions
     results_ch = ProcessResults(loci_extracted_ch, variant_reference_ch, gene_reference_ch)
@@ -123,9 +115,9 @@ workflow {
     results_ch_concatenated = results_ch.cis.concat(results_ch.trans)
 
     // Run Heritability estimates
-    heritability_estimates = EstimateHeritability(results_ch_concatenated, ld_ch)
+    heritability_estimates = EstimateHeritabilityLdsc(results_ch_concatenated, ld_ch)
 
-    WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
+    // WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
 }
 
 workflow.onComplete {

@@ -32,7 +32,6 @@ process ExtractResults {
             --genes !{genes.join(' ')} \
             !{variants_arg} \
             --cols '!{cols}' \
-            --bed-file !{locus} \
             --output-prefix extracted
 
         rm -r tmp_eqtls
