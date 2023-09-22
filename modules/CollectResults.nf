@@ -58,7 +58,7 @@ process ProcessResults {
         annotate_loci.py \
             --input-file concatenated.${locus_string}.csv \
             --variant-reference ${variantReference} \
-            --gene-gff ${geneReference} \
+            --gene-ref ${geneReference} \
             --out-prefix annotated.${locus_string}
         """
 }
