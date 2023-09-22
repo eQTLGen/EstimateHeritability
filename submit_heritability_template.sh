@@ -27,7 +27,7 @@ gene_reference="/gpfs/space/GI/eQTLGen/freeze1/InputFilesForPaper/2023-01-28_Met
 ld_w_dir="/gpfs/space/GI/eQTLGen/public_data/ldsc/eur_w_ld_chr"
 variants="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/EstimateHeritability/data/matching_unambiguous_hapmap_variants.txt"
 
-output_folder="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/ldsc_heritability/output_empirical_4GenPCNoExpPC_2023-07-13"
+output_folder="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPCNoExpPC_2023-07-13"
 
 NXF_VER=21.10.6 ${nextflow_path}/nextflow run main.nf \
 --input ${empirical}/eqtls \
