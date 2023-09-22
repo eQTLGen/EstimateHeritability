@@ -7,8 +7,9 @@
 nextflow.enable.dsl = 2
 
 // import modules
-include { EstimateHeritability } from './modules/EstimateHeritability'
+include { EstimateHeritability; EstimateHeritabilityLdsc } from './modules/EstimateHeritability'
 include { WriteOutRes } from './modules/WriteOutRes'
+include { ExtractResults; ProcessResults } from './modules/CollectResults.nf'
 
 def helpmessage() {
 
@@ -48,16 +49,28 @@ Mandatory arguments:
 
 }
 
-//Default parameters
-params.inputdir = ''
-params.lddir = ''
-params.snpref = ''
-params.gtf = ''
-params.logfile = ''
-params.outdir = ''
+params.maf_table = 'NO_FILE'
+params.bed = 'NO_FILE'
+params.variants = 'NO_FILE'
+params.inclusion_step_output = 'NO_FILE'
+params.cols = '+z_score'
+params.output
 
-params.pthresh = 5e-8
-params.eqtlwindow = 5000000
+if (params.help){
+    helpmessage()
+    exit 0
+}
+
+//Default parameters
+Channel.fromPath(params.input).collect().set { input_parquet_ch }
+Channel.fromPath(params.genes).splitCsv(header: ['gene']).map { row -> "${row.gene}" } .set { genes_ch }
+Channel.fromPath(params.variant_reference).collect().set { variant_reference_ch }
+Channel.fromPath(params.gene_reference).collect().set { gene_reference_ch }
+
+bed_file_ch = file(params.bed)
+variants_ch = file(params.variants)
+
+gene_chunk_size=1
 
 log.info """=================================================
 Estimate heritability v${workflow.manifest.version}"
@@ -87,18 +100,35 @@ log.info "================================================="
 
 // Process input file paths
 
-input_ch = Channel.fromPath(params.inputdir + '/phenotype=*', type: 'dir')
+//Default parameters
+Channel.fromPath(params.input).collect().set { input_parquet_ch }
+Channel.fromPath(params.genes).splitCsv(header: ['gene']).map { row -> "${row.gene}" } .set { genes_ch }
 
-ld_ch = Channel.fromPath(params.lddir, type: 'dir')
-snpref = Channel.fromPath(params.snpref)
-gtf = Channel.fromPath(params.gtf)
-logfile = Channel.fromPath(params.logfile)
-
-comb = input_ch.combine(ld_ch).combine(snpref).combine(gtf).combine(logfile)
+ld_ch = Channel.fromPath(params.ld_w_dir, type: 'dir').collect()
 
 workflow {
-EstimateHeritability(comb, params.pthresh, params.eqtlwindow)
-WriteOutRes(EstimateHeritability.out.h2.collectFile(name:'result.txt', sort: true, keepHeader: true))
+    // Buffer genes
+    genes_buffered_ch = genes_ch.collate(gene_chunk_size)
+
+    // Extract loci
+    loci_extracted_ch = ExtractResults(input_parquet_ch, variant_reference_ch, variants_ch, genes_buffered_ch, params.cols)
+        .flatten()
+        .map { file ->
+               def key = file.name.toString().tokenize('.').get(1)
+               return tuple(key, file) }
+        groupTuple()
+    }
+
+    // Split summary statistics in cis and trans regions
+    results_ch = ProcessResults(loci_extracted_ch, variant_reference_ch, gene_reference_ch)
+
+    // Combine results in a single channel
+    results_ch_concatenated = results_ch.cis.concat(results_ch.trans)
+
+    // Run Heritability estimates
+    heritability_estimates = EstimateHeritability(results_ch_concatenated, ld_ch)
+
+    WriteOutRes(heritability_estimates.out.collectFile(name:'result.txt', sort: true, keepHeader: true))
 }
 
 workflow.onComplete {

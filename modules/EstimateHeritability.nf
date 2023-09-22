@@ -2,12 +2,12 @@
 
 process EstimateHeritability {
 
-    tag "$input_ch"
+    tag "$gene"
 
     //publishDir "${params.outdir}", mode: 'copy', pattern: '*.png'
 
     input:
-      tuple path(input_ch), path(ld_ch), path(snpref), path(gtf), path(logfile)
+      tuple val(gene), path(input_ch), path(ld_ch), path(snpref), path(gtf), path(logfile)
       val(pthresh)
       val(eqtlwindow)
 
@@ -16,6 +16,7 @@ process EstimateHeritability {
       //path '*_h2.png', emit: plots
 
     shell:
+    // Should first limit to the trans variants
     '''
     export MKL_NUM_THREADS=1
     export NUMEXPR_NUM_THREADS=1
@@ -29,5 +30,28 @@ process EstimateHeritability {
     !{logfile} \
     !{pthresh} \
     !{eqtlwindow}
+    '''
+}
+
+
+process EstimateHeritabilityLdsc {
+
+    tag "$gene"
+
+    input:
+      tuple val(gene), path(sumstats)
+      path ld_ch
+
+    output:
+      tuple val(gene), path('*_h2.txt')
+
+    shell:
+    // Should first limit to the trans variants
+    '''
+    ldsc.py \
+    --h2 !{sumstats} \
+    --ref-ld-chr !{ld_ch} \
+    --w-ld-chr !{ld_ch} \
+    --out !{gene}_h2
     '''
 }
