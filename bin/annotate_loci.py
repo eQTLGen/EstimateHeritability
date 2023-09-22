@@ -154,7 +154,8 @@ class GtfParser:
                                       'start': int(fields[3]),
                                       'end': int(fields[4])})
         df = pd.DataFrame(genes).astype({'start': 'Int64', 'end': 'Int64'})
-        df['chromosome'] = df['chromosome'].str.lstrip('chr').replace({"M": "25", "X": "23", "Y": "24"}).astype('Int64')
+        df['chromosome'] = df['chromosome'].str.lstrip('chr')\
+            .replace({"M": "25", "MT": "25", "X": "23", "Y": "24"}).astype('Int64')
         df['gene_id'] = df['gene_id'].str.split('.').str[0]
         print(df['chromosome'].unique())
         return df[['gene_id', 'chromosome', 'start', 'end']].drop_duplicates(keep='first', subset=["gene_id"])
