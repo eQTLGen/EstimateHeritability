@@ -138,12 +138,12 @@ class GencodeParser:
 
 
 class GtfParser:
+    CHROMOSOMES = np.concatenate([
+        np.array(list(range(1,26))).astype('str'),
+        np.array(["M", "MT", "X", "Y"])])
     def __init__(self, filename):
         self.filename = filename
         self.df = self.parse()
-        self.chromosomes = np.concatenate([
-            np.array(list(range(1,26))).astype('str'),
-            np.array(["M", "MT", "X", "Y"])])
     def parse(self):
         genes = []
         with gzip.open(self.filename, 'rt') as f:
@@ -157,7 +157,7 @@ class GtfParser:
                                       'start': int(fields[3]),
                                       'end': int(fields[4])})
         df = pd.DataFrame(genes).astype({'start': 'Int64', 'end': 'Int64'})
-        df = df.loc[df['chromosome'].isin(self.chromosomes)]
+        df = df.loc[df['chromosome'].isin(self.CHROMOSOMES)]
         df['chromosome'] = df['chromosome'].str.lstrip('chr')\
             .replace({"M": "25", "MT": "25", "X": "23", "Y": "24"}).astype('Int64')
         df['gene_id'] = df['gene_id'].str.split('.').str[0]
