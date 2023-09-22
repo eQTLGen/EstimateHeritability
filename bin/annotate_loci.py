@@ -202,7 +202,11 @@ def main(argv=None):
     gencode_parser = GtfParser(args.gene_ref)
     gene_dataframe = gencode_parser.df
 
+    print(gene_dataframe.head())
+
     eqtls = pd.read_csv(args.input_file, sep='\t')
+
+    print(eqtls.head())
 
     # Perform method
     eqtls_annotated = (
@@ -210,6 +214,8 @@ def main(argv=None):
         .merge(variant_reference, how="inner", on="variant", validate="m:1")
         .merge(gene_dataframe, how="inner", left_on="phenotype", right_on="gene_id",
                suffixes=('', '_gene'), validate="m:1"))
+
+    print(eqtls_annotated.head())
 
     # Identify genes that have a cis-effect
     cis = np.logical_and(
