@@ -142,6 +142,7 @@ class GtfParser:
         self.filename = filename
         self.df = self.parse()
     def parse(self):
+        genes = []
         with gzip.open(self.filename, 'rt') as f:
             for line in f:
                 if not line.startswith('#'):
