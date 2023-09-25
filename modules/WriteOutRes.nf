@@ -6,7 +6,7 @@ process WriteOutRes {
     publishDir "${params.outdir}", mode: 'copy'
 
     input:
-      path "result.txt"
+      tuple val(gene_id), path(ldsc_log)
 
     output:
       path 'result.txt', emit: h2

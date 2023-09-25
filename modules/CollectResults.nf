@@ -32,7 +32,7 @@ process ExtractResults {
             --genes !{genes.join(' ')} \
             !{variants_arg} \
             --cols '!{cols}' \
-            --output-prefix extracted
+            --output-prefix extracted.!{genes.join('_')}
 
         rm -r tmp_eqtls
         '''

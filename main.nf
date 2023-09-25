@@ -116,7 +116,10 @@ workflow {
     results_ch_concatenated = results_ch.cis.concat(results_ch.trans)
 
     // Run Heritability estimates
-    heritability_estimates = EstimateHeritabilityLdsc(results_ch_concatenated, ld_ch, ldsc_source_ch)
+    ldsc_output_ch = EstimateHeritabilityLdsc(results_ch_concatenated, ld_ch, ldsc_source_ch)
+
+    // Process LDSC logs
+    ldsc_matrices_ch = EstimateHeritabilityLdsc(ldsc_output_ch)
 
     // WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
 }

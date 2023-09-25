@@ -45,7 +45,7 @@ process EstimateHeritabilityLdsc {
       path ldsc_source
 
     output:
-      path '*_h2.log'
+      tuple val(gene), path('*_h2.log')
 
     shell:
     // Should first limit to the trans variants
@@ -56,5 +56,20 @@ process EstimateHeritabilityLdsc {
     --w-ld-chr !{ld_ch}/ \
     --chisq-max 10000 \
     --out !{gene}_h2
+    '''
+}
+
+ProcessLdscOutput {
+    input:
+      tuple val(gene), path(ldsc_output)
+
+    output:
+      path '*_h2.txt'
+
+    shell:
+    // Should first limit to the trans variants
+    '''
+    sed -n '/Total Observed scale h2/,$p' !{ldsc_output} > h2.txt
+    process_ldsc_output.R !{gene} h2.txt
     '''
 }
