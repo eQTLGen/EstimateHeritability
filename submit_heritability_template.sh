@@ -18,8 +18,11 @@ module load singularity
 # Define paths
 nextflow_path=/gpfs/space/GI/eQTLGen/tools/
 
-empirical="/gpfs/space/GI/eQTLGen/freeze2/eqtl_mapping/output/empirical_4GenPCNoExpPC_2023-07-13_PerGene"
-genes="/gpfs/space/GI/eQTLGen/freeze2/eqtl_mapping/output/empirical_4GenPCNoExpPC_2023-07-13_PerGene/phenotypes_unique.txt"
+ldsc_sources="/gpfs/space/GI/eQTLGen/freeze2/tools/ldsc"
+
+#empirical="/gpfs/space/GI/eQTLGen/freeze2/eqtl_mapping/output/empirical_4GenPCNoExpPC_2023-07-13_PerGene"
+empirical="/gpfs/space/home/warmerda/eQTLGen/freeze2/eqtl_mapping/output/empirical_4GenPC20ExpPC_2023-05-27_PerGene"
+genes="/gpfs/space/GI/eQTLGen/freeze2/eqtl_mapping/output/empirical_4GenPC20ExpPC_2023-05-27_PerGene/phenotypes_unique.txt"
 
 variant_reference="/gpfs/space/GI/eQTLGen/freeze1/eqtl_mapping/MetaAnalysis/bin/hase/data/1000G-30x.ref.gz"
 gene_reference="/gpfs/space/GI/eQTLGen/freeze1/InputFilesForPaper/2023-01-28_MetaAnalysis/data/Homo_sapiens.GRCh38.106.gtf.gz"
@@ -27,7 +30,7 @@ gene_reference="/gpfs/space/GI/eQTLGen/freeze1/InputFilesForPaper/2023-01-28_Met
 ld_w_dir="/gpfs/space/GI/eQTLGen/public_data/ldsc/eur_w_ld_chr"
 variants="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/EstimateHeritability/data/matching_unambiguous_hapmap_variants.txt"
 
-output_folder="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPCNoExpPC_2023-07-13"
+output_folder="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2023-05-27"
 
 NXF_VER=21.10.6 ${nextflow_path}/nextflow run main.nf \
 --input ${empirical}/eqtls \
@@ -37,6 +40,7 @@ NXF_VER=21.10.6 ${nextflow_path}/nextflow run main.nf \
 --output ${output_folder} \
 --ld_w_dir ${ld_w_dir} \
 --variants ${variants} \
+--ldsc_source ${ldsc_sources} \
 -resume \
 -profile slurm,singularity
 

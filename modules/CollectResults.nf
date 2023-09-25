@@ -47,7 +47,7 @@ process ProcessResults {
         path geneReference
 
     output:
-        tuple val(locus_string), val("cis"), path("annotated.${locus_string}_cis.csv.gz"), emit: cis
+        tuple val(locus_string), val("cis"), path("annotated.${locus_string}_cis.csv.gz"), emit: cis, optional: true
         tuple val(locus_string), val("trans"), path("annotated.${locus_string}_trans.csv.gz"), emit: trans
 
     script:

@@ -232,7 +232,8 @@ def main(argv=None):
 
     ldsc_processed_output = eqtls_annotated.rename(columns=ldsc_selector)[[*ldsc_selector.values()]]
 
-    ldsc_processed_output.loc[cis].to_csv("{}_cis.csv.gz".format(args.out_prefix), sep="\t", index=False)
+    if ldsc_processed_output.loc[cis].shape[0] > 0:
+        ldsc_processed_output.loc[cis].to_csv("{}_cis.csv.gz".format(args.out_prefix), sep="\t", index=False)
     ldsc_processed_output.loc[trans].to_csv("{}_trans.csv.gz".format(args.out_prefix), sep="\t", index=False)
 
     # Output
