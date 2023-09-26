@@ -59,7 +59,7 @@ process EstimateHeritabilityLdsc {
     '''
 }
 
-ProcessLdscOutput {
+process ProcessLdscOutput {
     input:
       tuple val(gene), path(ldsc_output)
 

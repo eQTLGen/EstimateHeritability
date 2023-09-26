@@ -7,7 +7,7 @@
 nextflow.enable.dsl = 2
 
 // import modules
-include { EstimateHeritability; EstimateHeritabilityLdsc } from './modules/EstimateHeritability'
+include { EstimateHeritability; EstimateHeritabilityLdsc; ProcessLdscOutput } from './modules/EstimateHeritability'
 include { WriteOutRes } from './modules/WriteOutRes'
 include { ExtractResults; ProcessResults } from './modules/CollectResults.nf'
 
@@ -119,7 +119,7 @@ workflow {
     ldsc_output_ch = EstimateHeritabilityLdsc(results_ch_concatenated, ld_ch, ldsc_source_ch)
 
     // Process LDSC logs
-    ldsc_matrices_ch = EstimateHeritabilityLdsc(ldsc_output_ch)
+    ldsc_matrices_ch = ProcessLdscOutput(ldsc_output_ch)
 
     // WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
 }
