@@ -60,6 +60,8 @@ process EstimateHeritabilityLdsc {
 }
 
 process ProcessLdscOutput {
+    container 'quay.io/eqtlgen/eqtlgen_phase2:v1.8'
+
     input:
       tuple val(gene), path(ldsc_output)
 
