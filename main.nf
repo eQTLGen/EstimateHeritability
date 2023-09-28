@@ -63,9 +63,13 @@ Channel.fromPath(params.input).collect().set { input_parquet_ch }
 Channel.fromPath(params.genes).splitCsv(header: ['gene']).map { row -> "${row.gene}" } .set { genes_ch }
 Channel.fromPath(params.variant_reference).collect().set { variant_reference_ch }
 Channel.fromPath(params.gene_reference).collect().set { gene_reference_ch }
-Channel.fromPath(params.ldsc_source).collect().set { ldsc_source_ch }
+Channel.fromPath(params.gwas_map)
+    .splitCsv(header:true)
+    .map { row-> tuple(row.Name, file(row.Path), row.N) }
+    .set { gwas_input_ch }
 
 variants_ch = file(params.variants)
+hapmap_ch = file(params.hapmap)
 
 ld_ch = Channel.fromPath(params.ld_w_dir, type: 'dir').collect()
 
@@ -115,8 +119,11 @@ workflow {
     // Combine results in a single channel
     results_ch_concatenated = results_ch.cis.concat(results_ch.trans)
 
+    // Process GWAS data
+    process_gwas_ch = ProcessVuckovicGwasData(gwas_input_ch, hapmap_ch)
+
     // Run Heritability estimates
-    ldsc_output_ch = EstimateHeritabilityLdsc(results_ch_concatenated, ld_ch, ldsc_source_ch)
+    ldsc_output_ch = EstimateHeritabilityLdsc(results_ch_concatenated, ld_ch)
 
     // Process LDSC logs
     ldsc_matrices_ch = ProcessLdscOutput(ldsc_output_ch)

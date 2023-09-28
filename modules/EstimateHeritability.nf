@@ -35,14 +35,13 @@ process EstimateHeritability {
 
 
 process EstimateHeritabilityLdsc {
-    container 'quay.io/cawarmerdam/ldsc:v0.1'
+    container 'quay.io/cawarmerdam/ldsc:v0.3'
     tag "ldsc_${annot}_${gene}"
     errorStrategy = 'ignore'
 
     input:
       tuple val(gene), val(annot), path(sumstats)
       path ld_ch
-      path ldsc_source
 
     output:
       tuple val(gene), path('*_h2.log')
@@ -50,7 +49,7 @@ process EstimateHeritabilityLdsc {
     shell:
     // Should first limit to the trans variants
     '''
-    !{ldsc_source}/ldsc.py \
+    ldsc/ldsc.py \
     --h2 !{sumstats} \
     --ref-ld-chr !{ld_ch}/ \
     --w-ld-chr !{ld_ch}/ \
