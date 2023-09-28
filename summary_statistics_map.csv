@@ -1,0 +1,4 @@
+Name,Path,N
+lymphocytes,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/raw/lymph.assoc,1002426
+monocytes,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/raw/mono.assoc,1002426
+basophils,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/raw/baso.assoc,1002426
