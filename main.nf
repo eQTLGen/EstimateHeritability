@@ -10,6 +10,7 @@ nextflow.enable.dsl = 2
 include { EstimateHeritability; EstimateHeritabilityLdsc; ProcessLdscOutput } from './modules/EstimateHeritability'
 include { WriteOutRes } from './modules/WriteOutRes'
 include { ExtractResults; ProcessResults } from './modules/CollectResults.nf'
+include { ProcessVuckovicGwasData } from './modules/ProcessGwas.nf'
 
 def helpmessage() {
 
@@ -65,7 +66,8 @@ Channel.fromPath(params.variant_reference).collect().set { variant_reference_ch 
 Channel.fromPath(params.gene_reference).collect().set { gene_reference_ch }
 Channel.fromPath(params.gwas_map)
     .splitCsv(header:true)
-    .map { row-> tuple(row.Name, file(row.Path), row.N) }
+    .map { row-> tuple(row.Gwas, file(row.Path), row.N) }
+    .view()
     .set { gwas_input_ch }
 
 variants_ch = file(params.variants)
@@ -123,7 +125,7 @@ workflow {
     process_gwas_ch = ProcessVuckovicGwasData(gwas_input_ch, hapmap_ch)
 
     // Run Heritability estimates
-    ldsc_output_ch = EstimateHeritabilityLdsc(results_ch_concatenated, ld_ch)
+    ldsc_output_ch = EstimateHeritabilityLdsc(results_ch_concatenated, process_gwas_ch.map { name, file -> file }.collect(), ld_ch)
 
     // Process LDSC logs
     ldsc_matrices_ch = ProcessLdscOutput(ldsc_output_ch)

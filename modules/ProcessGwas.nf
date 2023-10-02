@@ -8,14 +8,16 @@ process ProcessVuckovicGwasData {
         path snplist
 
     output:
-        tuple val(name), path("processed.${name}_cis.csv.gz")
+        tuple val(name), path("${name.replaceAll("\\s","_")}.processed.sumstats.gz")
 
     script:
         """
-        ldsc/munge_sumstats.py \
+        /ldsc/munge_sumstats.py \
         --sumstats ${sumstats} \
         --N ${sample_size} \
-        --out ${name}_processed \
-        --merge-alleles ${snplist}
+        --out ${name.replaceAll("\\s","_")}.processed \
+        --merge-alleles ${snplist} \
+        --snp variant_id \
+        --chunksize 500000
         """
 }

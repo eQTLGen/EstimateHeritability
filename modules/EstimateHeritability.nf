@@ -41,6 +41,7 @@ process EstimateHeritabilityLdsc {
 
     input:
       tuple val(gene), val(annot), path(sumstats)
+      path gwas
       path ld_ch
 
     output:
@@ -49,12 +50,12 @@ process EstimateHeritabilityLdsc {
     shell:
     // Should first limit to the trans variants
     '''
-    ldsc/ldsc.py \
-    --h2 !{sumstats} \
+    /ldsc/ldsc.py \
+    --rg !{sumstats},!{gwas.join(",")} \
     --ref-ld-chr !{ld_ch}/ \
     --w-ld-chr !{ld_ch}/ \
     --chisq-max 10000 \
-    --out !{gene}_h2
+    --out !{gene}_rg
     '''
 }
 
