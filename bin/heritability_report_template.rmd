@@ -1,0 +1,27 @@
+---
+title: "Heritability report"
+date: "`r format(Sys.time(), '%d/%m/%y')`"
+output:
+  html_document:
+    code_folding: hide
+    toc: true
+---
+
+#
+
+The code chunk appears:
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+library(data.table)
+library(tidyverse)
+
+<- fread(params.table)
+```
+
+Type any R code in the chunk, for example:
+```{r}
+mycars <- within(mtcars, { cyl <- ordered(cyl) })
+mycars
+```
+
+Now, click the **Run** button on the chunk toolbar to [execute](https://www.jetbrains.com/help/pycharm/r-markdown.html#run-r-code) the chunk code. The result should be placed under the chunk.
+Click the **Knit and Open Document** to build and preview an output.
