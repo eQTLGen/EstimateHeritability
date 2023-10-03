@@ -62,19 +62,20 @@ read_ldsc_logs <- function(filepath) {
     } else if (startsWith(line, "Heritability of phenotype")) {
       heritability_tables[[sumstats]] <- read_heritability_table(
         readLines(con, n = 6)[2:6])
+      break
 
     } else if (startsWith(line, "Genetic Covariance")) {
       covariance_tables[[sumstats]] <- read_covariance_table(
         readLines(con, n = 4)[2:4])
 
-    } else if (startsWith(line, "Summary of Genetic Correlation Results")) {
+    } else if (startsWith(line, "Summary of Genetic Correlation Results") & length(heritability_tables) > 0) {
       correlation_table <- as_tibble(fread(text=readLines(con, length(heritability_tables) + 1), header=T))
 
     }
   }
 
   close(con)
-  return(correlation_table)
+  return(bind_rows(heritability_tables, .id="sumstats_id"))
 }
 
 # Main
@@ -88,14 +89,23 @@ main <- function(argv = NULL) {
   }
 
   gene_id <- argv[1]
-  ldsc_log <- argv[2]
+  annot <- argv[2]
+  ldsc_log <- argv[3]
 
   # Process input
-  processed_table <- tibble(read_ldsc_logs(ldsc_log)) %>%
-    mutate(gene_id = gene_id)
+  table_proc <- read_ldsc_logs(ldsc_log)
 
-  # Process output
-  write.table(processed_table, "ldsc_matrix_h2.txt", col.names = F, row.names = F, sep = "\t", quote = F)
+  if (!is.null(table_proc) & nrow(table_proc)>0) {
+
+    processed_table <- table_proc %>%
+      mutate(gene_id = gene_id,
+             annot = annot)
+
+    # Process output
+    write.table(processed_table, sprintf("ldsc_matrix_%s_%s_h2.txt", gene_id, annot), col.names = F, row.names = F, sep = "\t", quote = F)
+  } else {
+    write.table(c(""), sprintf("ldsc_matrix_%s_%s_h2.txt", gene_id, annot), col.names = F, row.names = F, sep = "\t", quote = F)
+  }
 }
 
 if (sys.nframe() == 0 && !interactive()) {
