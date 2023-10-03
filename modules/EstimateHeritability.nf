@@ -60,6 +60,7 @@ process EstimateHeritabilityLdsc {
 }
 
 process ProcessLdscOutput {
+    publishDir "${params.output}", mode: 'copy', pattern: '*_h2.txt'
 
     input:
       tuple val(gene), path(ldsc_output)
@@ -70,7 +71,6 @@ process ProcessLdscOutput {
     shell:
     // Should first limit to the trans variants
     '''
-    sed -n '/Total Observed scale h2/,$p' !{ldsc_output} > h2.txt
-    process_ldsc_output.R !{gene} h2.txt
+    process_ldsc_output.R !{gene} !{ldsc_output}
     '''
 }
