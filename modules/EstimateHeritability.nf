@@ -45,7 +45,7 @@ process EstimateHeritabilityLdsc {
       path ld_ch
 
     output:
-      tuple val(gene), path('*_h2.log')
+      tuple val(gene), val(annot), path('*_rg.log')
 
     shell:
     // Should first limit to the trans variants
@@ -63,7 +63,7 @@ process ProcessLdscOutput {
     publishDir "${params.output}", mode: 'copy', pattern: '*_h2.txt'
 
     input:
-      tuple val(gene), path(ldsc_output)
+      tuple val(gene), val(annot), path(ldsc_output)
 
     output:
       path '*_h2.txt'
@@ -71,6 +71,6 @@ process ProcessLdscOutput {
     shell:
     // Should first limit to the trans variants
     '''
-    process_ldsc_output.R !{gene} !{ldsc_output}
+    process_ldsc_output.R !{gene} !{annot} !{ldsc_output}
     '''
 }
