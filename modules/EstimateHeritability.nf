@@ -83,11 +83,10 @@ process EstimateHeritabilityLdsc {
     // Should first limit to the trans variants
     '''
     /ldsc/ldsc.py \
-    --rg !{sumstats},!{gwas.join(",")} \
+    --rg !{sumstats_a},!{sumstats_b} \
     --ref-ld-chr !{ld_ch}/ \
     --w-ld-chr !{ld_ch}/ \
     --chisq-max 10000 \
-    --M !{m_5_50}
     --out !{gene}_rg
     '''
 }
