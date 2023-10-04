@@ -71,6 +71,7 @@ process EstimateHeritabilityLdsc {
     container 'quay.io/cawarmerdam/ldsc:v0.3'
     tag "ldsc_${annot}_${gene}"
     errorStrategy = 'ignore'
+    executor = 'local'
 
     input:
       tuple val(name_a), val(annot_a), path(sumstats_a), val(name_b), val(annot_b), path(sumstats_b)
