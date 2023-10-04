@@ -87,7 +87,7 @@ process EstimateHeritabilityLdsc {
     --ref-ld-chr !{ld_ch}/ \
     --w-ld-chr !{ld_ch}/ \
     --chisq-max 10000 \
-    --out !{gene}_rg
+    --out !{name_a}_!{name_b}_rg
     '''
 }
 
