@@ -35,6 +35,8 @@ gwas_map="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/EstimateHer
 
 output_folder="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPCNoExpPC_2023-07-13"
 
+variants_bed="/gpfs/space/GI/eQTLGen/public_data/1000genomes/vol1/ftp/release/20130502/processed/variants.chrALL.hg38.M_5_50.txt"
+
 NXF_VER=21.10.6 ${nextflow_path}/nextflow run main.nf \
 --input ${empirical}/eqtls \
 --genes ${genes} \
@@ -44,6 +46,7 @@ NXF_VER=21.10.6 ${nextflow_path}/nextflow run main.nf \
 --ld_w_dir ${ld_w_dir} \
 --variants ${variants} \
 --hapmap ${hapmap} \
+--variants_bed ${variant_bed} \
 --gwas_map ${gwas_map} \
 --ldsc_source ${ldsc_sources} \
 -resume \
