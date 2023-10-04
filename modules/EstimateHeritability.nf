@@ -34,13 +34,46 @@ process EstimateHeritability {
 }
 
 
+process ExtractGenomicCoordinates {
+
+    input:
+      path geneReference
+
+    output:
+      path bedFile
+
+    script:
+    """
+    gene_bed_files.py \
+        --gene-ref ${geneReference}
+    """
+}
+
+
+process CalculateHeritabilitySnps {
+
+    input:
+      path bedFile
+      path oneKgBedFiles
+
+    output:
+      path "cis_trans_gen_annot_M_5_50.txt"
+
+    shell:
+    // Presume filtering of 1000Kg files to variants with MAF > 5% is already done
+    // Per row in the bedFile, count the number of intersecting variants
+    '''
+    plink2 --bfile
+    '''
+}
+
 process EstimateHeritabilityLdsc {
     container 'quay.io/cawarmerdam/ldsc:v0.3'
     tag "ldsc_${annot}_${gene}"
     errorStrategy = 'ignore'
 
     input:
-      tuple val(gene), val(annot), path(sumstats)
+      tuple val(name_a), val(annot_a), path(sumstats_a), val(name_b), val(annot_b), path(sumstats_b), val(m_5_50)
       path gwas
       path ld_ch
 
@@ -55,6 +88,7 @@ process EstimateHeritabilityLdsc {
     --ref-ld-chr !{ld_ch}/ \
     --w-ld-chr !{ld_ch}/ \
     --chisq-max 10000 \
+    --M !{m_5_50}
     --out !{gene}_rg
     '''
 }
