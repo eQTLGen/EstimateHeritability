@@ -69,7 +69,6 @@ process CalculateHeritabilitySnps {
 
 process EstimateHeritabilityLdsc {
     container 'quay.io/cawarmerdam/ldsc:v0.3'
-    tag "ldsc_${annot}_${gene}"
     errorStrategy = 'ignore'
 
     input:
@@ -77,7 +76,7 @@ process EstimateHeritabilityLdsc {
       path ld_ch
 
     output:
-      tuple val(gene), val(annot), path('*_rg.log')
+      tuple val(name_a), val(annot_a), val(name_b), val(annot_b), path('*_rg.log')
 
     shell:
     // Should first limit to the trans variants
@@ -91,11 +90,34 @@ process EstimateHeritabilityLdsc {
     '''
 }
 
+process EstimateHeritabilityGenomicSem {
+    errorStrategy = 'ignore'
+
+    input:
+      tuple val(gene), val(annot), path(sumstats_b)
+      tuple val(name), path(gwas)
+      path ld_ch
+
+    output:
+      tuple val(gene), val(annot), path('*_rg.log')
+
+    shell:
+    // Should first limit to the trans variants
+    '''
+    estimate_heritability_genomic_sem.R \
+    --rg !{sumstats_a},!{sumstats_b} \
+    --ref-ld-chr !{ld_ch}/ \
+    --w-ld-chr !{ld_ch}/ \
+    --chisq-max 10000 \
+    --out !{name_a.replaceAll("\\s","_")}_rg_!{name_b.replaceAll("\\s","_")}
+    '''
+}
+
 process ProcessLdscOutput {
     publishDir "${params.output}", mode: 'copy', pattern: '*_h2.txt'
 
     input:
-      tuple val(gene), val(annot), path(ldsc_output)
+      tuple val(name_a), val(annot_a), val(name_b), val(annot_b), path(ldsc_output)
 
     output:
       path '*_h2.txt'
