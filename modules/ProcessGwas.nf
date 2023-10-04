@@ -8,7 +8,7 @@ process ProcessVuckovicGwasData {
         path snplist
 
     output:
-        tuple val(name), path("${name.replaceAll("\\s","_")}.processed.sumstats.gz")
+        tuple val(name), val("ctc"), path("${name.replaceAll("\\s","_")}.processed.sumstats.gz")
 
     script:
         """

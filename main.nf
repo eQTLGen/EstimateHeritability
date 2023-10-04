@@ -118,14 +118,18 @@ workflow {
     // Split summary statistics in cis and trans regions
     results_ch = ProcessResults(loci_extracted_ch, variant_reference_ch, gene_reference_ch)
 
-    // Combine results in a single channel
-    results_ch_concatenated = results_ch.cis.concat(results_ch.trans)
-
     // Process GWAS data
     process_gwas_ch = ProcessVuckovicGwasData(gwas_input_ch, hapmap_ch)
 
+    // Combine results in a single channel
+    all_sumstats = results_ch.cis.concat(results_ch.trans).concat(process_gwas_ch)
+
+    // Generate all pairs without duplicates
+    pairs = all_sumstats.combine(all_sumstats)
+                .filter { pair -> pair[0].compareTo(pair[1]) < 0 }
+
     // Run Heritability estimates
-    ldsc_output_ch = EstimateHeritabilityLdsc(results_ch_concatenated, process_gwas_ch.map { name, file -> file }.collect(), ld_ch)
+    ldsc_output_ch = EstimateHeritabilityLdsc(pairs, ld_ch)
 
     // Process LDSC logs
     ldsc_matrices_ch = ProcessLdscOutput(ldsc_output_ch)
