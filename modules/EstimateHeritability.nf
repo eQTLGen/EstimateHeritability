@@ -73,7 +73,7 @@ process EstimateHeritabilityLdsc {
     errorStrategy = 'ignore'
 
     input:
-      tuple val(name_a), val(annot_a), path(sumstats_a), val(name_b), val(annot_b), path(sumstats_b), val(m_5_50)
+      tuple val(name_a), val(annot_a), path(sumstats_a), val(name_b), val(annot_b), path(sumstats_b)
       path ld_ch
 
     output:

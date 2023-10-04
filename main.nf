@@ -126,7 +126,9 @@ workflow {
 
     // Generate all pairs without duplicates
     pairs = all_sumstats.combine(all_sumstats)
-                .filter { pair -> pair[0].compareTo(pair[1]) < 0 }
+                .filter { pair -> pair[0] != pair[3] }
+                .filter { pair -> (pair[1] != "cis" & pair[1] != "trans") | (pair[4] != "cis" & pair[4] != "trans") }
+                .filter { pair -> pair[0].compareTo(pair[3]) < 0 }
 
     // Run Heritability estimates
     ldsc_output_ch = EstimateHeritabilityLdsc(pairs, ld_ch)
