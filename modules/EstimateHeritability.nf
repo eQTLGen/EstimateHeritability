@@ -34,37 +34,27 @@ process EstimateHeritability {
 }
 
 
-process ExtractGenomicCoordinates {
+process CountHeritabilitySnps {
 
     input:
       path geneReference
+      path oneKgBedFiles
 
     output:
-      path bedFile
+      path "cis_gen_annot_M_5_50.txt", emit: cis
+      path "trans_gen_annot_M_5_50.txt", emit: trans
 
     script:
     """
     gene_bed_files.py \
         --gene-ref ${geneReference}
+        --out-prefix genes
+
+    bedtools intersect -a !{cisBed} -b !{oneKgBedFiles} | \
+        awk -F '\t' '{print $2}' | sort | uniq -c > "cis_gen_annot_M_5_50.txt"
+    bedtools intersect -v -a !{transBed} -b !{oneKgBedFiles} | \
+            awk -F '\t' '{print $2}' | sort | uniq -c > "trans_gen_annot_M_5_50.txt"
     """
-}
-
-
-process CalculateHeritabilitySnps {
-
-    input:
-      path bedFile
-      path oneKgBedFiles
-
-    output:
-      path "cis_trans_gen_annot_M_5_50.txt"
-
-    shell:
-    // Presume filtering of 1000Kg files to variants with MAF > 5% is already done
-    // Per row in the bedFile, count the number of intersecting variants
-    '''
-    plink2 --bfile
-    '''
 }
 
 process EstimateHeritabilityLdsc {
@@ -94,7 +84,7 @@ process EstimateHeritabilityGenomicSem {
     errorStrategy = 'ignore'
 
     input:
-      tuple val(gene), val(annot), path(sumstats_b)
+      tuple val(gene), val(annot), path(sumstats)
       tuple val(name), path(gwas)
       path ld_ch
 
@@ -104,12 +94,11 @@ process EstimateHeritabilityGenomicSem {
     shell:
     // Should first limit to the trans variants
     '''
-    estimate_heritability_genomic_sem.R \
-    --rg !{sumstats_a},!{sumstats_b} \
+    genomic_sem_ldsc.R \
+    --rg !{sumstats_a} !{gwas.join(" ")} \
     --ref-ld-chr !{ld_ch}/ \
     --w-ld-chr !{ld_ch}/ \
-    --chisq-max 10000 \
-    --out !{name_a.replaceAll("\\s","_")}_rg_!{name_b.replaceAll("\\s","_")}
+    --names "!{gene}" "!{name.join("\" \"")}"
     '''
 }
 
