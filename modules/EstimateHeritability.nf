@@ -1,4 +1,4 @@
-#!/bin/bash nextflow 
+#!/bin/bash nextflow
 
 process EstimateHeritability {
 
@@ -33,7 +33,6 @@ process EstimateHeritability {
     '''
 }
 
-
 process CountHeritabilitySnps {
 
     input:
@@ -47,13 +46,13 @@ process CountHeritabilitySnps {
     shell:
     '''
     gene_bed_files.py \
-        --gene-ref ${geneReference}
+        --gene-ref !{geneReference} \
         --out-prefix genes
 
-    bedtools intersect -a !{cisBed} -b !{oneKgBedFiles} | \
-        awk -F '\t' '{print $2}' | sort | uniq -c > "cis_gen_annot_M_5_50.txt"
-    bedtools intersect -v -a !{transBed} -b !{oneKgBedFiles} | \
-            awk -F '\t' '{print $2}' | sort | uniq -c > "trans_gen_annot_M_5_50.txt"
+    bedtools intersect -a "genes.cis.bed" -b !{oneKgBedFiles} | \
+        awk -F '\t' '{print $4}' | sort | uniq -c > "cis_gen_annot_M_5_50.txt"
+    bedtools intersect -v -a "genes_trans.bed" -b !{oneKgBedFiles} | \
+            awk -F '\t' '{print $4}' | sort | uniq -c > "trans_gen_annot_M_5_50.txt"
     '''
 }
 
@@ -67,7 +66,7 @@ process EstimateHeritabilityLdsc {
       path ld_ch
 
     output:
-      tuple val(name_a), val(annot_a), val(name_b), val(annot_b), path('*_rg.log')
+      tuple val(name_a), val(annot_a), val(name_b), val(annot_b), path('*_rg_*.log')
 
     shell:
     // Should first limit to the trans variants

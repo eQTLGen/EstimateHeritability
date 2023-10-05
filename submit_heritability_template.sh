@@ -46,7 +46,7 @@ NXF_VER=21.10.6 ${nextflow_path}/nextflow run main.nf \
 --ld_w_dir ${ld_w_dir} \
 --variants ${variants} \
 --hapmap ${hapmap} \
---variants_bed ${variant_bed} \
+--variants_bed ${variants_bed} \
 --gwas_map ${gwas_map} \
 --ldsc_source ${ldsc_sources} \
 -resume \

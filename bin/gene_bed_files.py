@@ -120,16 +120,21 @@ def main(argv=None):
 
     assert np.alltrue(gene_dataframe.end > gene_dataframe.start)
 
-    gene_dataframe.trans_downstream = gene_dataframe.end + 5*10**6
-    gene_dataframe.trans_upstream = gene_dataframe.start - 5*10**6
+    gene_dataframe["trans_downstream"] = gene_dataframe.end + 5*10**6
+    gene_dataframe["trans_upstream"] = gene_dataframe.start - 5*10**6
 
-    gene_dataframe.cis_downstream = gene_dataframe.end + 1*10**6
-    gene_dataframe.cis_upstream = gene_dataframe.start - 1*10**6
+    gene_dataframe["cis_downstream"] = gene_dataframe.end + 1*10**6
+    gene_dataframe["cis_upstream"] = gene_dataframe.start - 1*10**6
 
-    (gene_dataframe[np.array(["chromosome" , "trans_upstream", "trans_downstream", "gene_id"])]
-     .to_csv("{}.trans.bed".format(args.out_prefix), sep="\t", index=False, columns=False))
-    (gene_dataframe[np.array(["chromosome" , "cis_upstream", "cis_downstream", "gene_id"])]
-     .to_csv("{}.cis.bed".format(args.out_prefix), sep="\t", index=False, columns=False))
+    gene_dataframe.loc[gene_dataframe["cis_upstream"] < 0, "cis_upstream"] = 0
+    gene_dataframe.loc[gene_dataframe["trans_upstream"] < 0, "trans_upstream"] = 0
+
+    print(gene_dataframe)
+
+    (gene_dataframe[["chromosome" , "trans_upstream", "trans_downstream", "gene_id"]]
+     .to_csv("{}.trans.bed".format(args.out_prefix), sep="\t", index=False, header=False))
+    (gene_dataframe[["chromosome" , "cis_upstream", "cis_downstream", "gene_id"]]
+     .to_csv("{}.cis.bed".format(args.out_prefix), sep="\t", index=False, header=False))
 
     # Output
     return 0
