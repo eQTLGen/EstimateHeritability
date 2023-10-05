@@ -119,23 +119,29 @@ workflow {
     // Split summary statistics in cis and trans regions
     results_ch = ProcessResults(loci_extracted_ch, variant_reference_ch, gene_reference_ch)
 
+    // Combine results in a single channel
+    results_ch_concatenated = results_ch.cis.concat(results_ch.trans)
+
     // Count the number of heritability variants for each gene
-    heritability_snps_ch = CountHeritabilitySnps(gene_reference_ch, one_kg_bed_ch)
+    heritability_snps_file_ch = CountHeritabilitySnps(gene_reference_ch, one_kg_bed_ch)
+
+    // Heritability SNPs
+    heritability_snps_cis = heritability_snps_file_ch.cis.splitCsv(header:false, sep:' ')
+        .map { row -> tuple(row[1], "cis", row[0]) }
+    heritability_snps_trans = heritability_snps_file_ch.trans.splitCsv(header:false, sep:' ')
+        .map { row -> tuple(row[1], "trans", row[0]) }
+    heritability_snps = heritability_snps_cis.concat(heritability_snps_trans)
+
+    results_ch_concatenated = results_ch.cis.concat(results_ch.trans)
+        .join(heritability_snps, by: [0,1], remainder=false)
+        .view()
 
     // Process GWAS data
     process_gwas_ch = ProcessVuckovicGwasData(gwas_input_ch, hapmap_ch)
 
-    // Combine results in a single channel
-    all_sumstats = results_ch.cis.concat(results_ch.trans).concat(process_gwas_ch)
-
-    // Generate all pairs without duplicates
-    pairs = all_sumstats.combine(all_sumstats)
-                .filter { pair -> pair[0] != pair[3] }
-                .filter { pair -> (pair[1] != "cis" & pair[1] != "trans") | (pair[4] != "cis" & pair[4] != "trans") }
-                .filter { pair -> pair[0].compareTo(pair[3]) < 0 }
-
     // Run Heritability estimates
-    ldsc_output_ch = EstimateHeritabilityLdsc(pairs, ld_ch)
+    ldsc_output_ch = EstimateHeritabilityLdsc(
+        results_ch_concatenated, process_gwas_ch.map { name, file -> file }.collect(), ld_ch)
 
     // Process LDSC logs
     ldsc_matrices_ch = ProcessLdscOutput(ldsc_output_ch)
