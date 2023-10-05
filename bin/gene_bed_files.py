@@ -126,10 +126,10 @@ def main(argv=None):
     gene_dataframe.cis_downstream = gene_dataframe.end + 1*10**6
     gene_dataframe.cis_upstream = gene_dataframe.start - 1*10**6
 
-    cis = gene_dataframe[""]
-
-    cis.to_csv("{}_cis.bed".format(args.out_prefix), sep="\t", index=False)
-    trans.to_csv("{}_trans.bed".format(args.out_prefix), sep="\t", index=False)
+    (gene_dataframe[np.array(["chromosome" , "trans_upstream", "trans_downstream", "gene_id"])]
+     .to_csv("{}.trans.bed".format(args.out_prefix), sep="\t", index=False, columns=False))
+    (gene_dataframe[np.array(["chromosome" , "cis_upstream", "cis_downstream", "gene_id"])]
+     .to_csv("{}.cis.bed".format(args.out_prefix), sep="\t", index=False, columns=False))
 
     # Output
     return 0

@@ -70,6 +70,7 @@ Channel.fromPath(params.gwas_map)
     .view()
     .set { gwas_input_ch }
 
+one_kg_bed_ch = file(params.variants_bed)
 variants_ch = file(params.variants)
 hapmap_ch = file(params.hapmap)
 
@@ -117,6 +118,9 @@ workflow {
 
     // Split summary statistics in cis and trans regions
     results_ch = ProcessResults(loci_extracted_ch, variant_reference_ch, gene_reference_ch)
+
+    // Count the number of heritability variants for each gene
+    heritability_snps_ch = CountHeritabilitySnps(gene_reference_ch, one_kg_bed_ch)
 
     // Process GWAS data
     process_gwas_ch = ProcessVuckovicGwasData(gwas_input_ch, hapmap_ch)
