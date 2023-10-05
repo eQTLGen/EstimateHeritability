@@ -44,8 +44,8 @@ process CountHeritabilitySnps {
       path "cis_gen_annot_M_5_50.txt", emit: cis
       path "trans_gen_annot_M_5_50.txt", emit: trans
 
-    script:
-    """
+    shell:
+    '''
     gene_bed_files.py \
         --gene-ref ${geneReference}
         --out-prefix genes
@@ -54,7 +54,7 @@ process CountHeritabilitySnps {
         awk -F '\t' '{print $2}' | sort | uniq -c > "cis_gen_annot_M_5_50.txt"
     bedtools intersect -v -a !{transBed} -b !{oneKgBedFiles} | \
             awk -F '\t' '{print $2}' | sort | uniq -c > "trans_gen_annot_M_5_50.txt"
-    """
+    '''
 }
 
 process EstimateHeritabilityLdsc {
