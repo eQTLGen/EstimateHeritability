@@ -142,7 +142,7 @@ workflow {
     ldsc_output_ch = EstimateHeritabilityLdsc(
         ldsc_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
 
-    EstimateHeritabilityLdsc(
+    EstimateHeritabilityLdscAllPairwise(
         process_gwas_ch.map { name, gws, file -> name }.collect(),
         process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
 
