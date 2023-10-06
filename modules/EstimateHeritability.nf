@@ -118,16 +118,21 @@ process EstimateHeritabilityLdscAllPairwise {
 
     output:
       val name
-      path '*_rg.log'
+      path '*_rg_*.log'
 
     shell:
     // Should first limit to the trans variants
     '''
     f=( !{gwas.join(" ")} )
+    n=( !{names.join(" ")} )
 
     for ((i = 0; i+1 < ${#f[@]}; i++)); do
-        echo ${f[i]}
-        echo ${f[@]:i+1}
+
+        /ldsc/ldsc.py \
+        --rg ${f[i]},${f[@]:i+1} \
+        --ref-ld-chr !{ld_ch}/ \
+        --w-ld-chr !{ld_ch}/ \
+        --out ${n[i]}_rg_${n[@]:i+1}
     done
     '''
 }
