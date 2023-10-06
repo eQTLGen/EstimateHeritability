@@ -124,7 +124,7 @@ process EstimateHeritabilityLdscAllPairwise {
     // Should first limit to the trans variants
     '''
     f=( !{gwas.join(" ")} )
-    n=( !{names.join(" ")} )
+    n=( !{name.join(" ")} )
 
     for ((i = 0; i+1 < ${#f[@]}; i++)); do
 
