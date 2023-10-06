@@ -7,7 +7,7 @@
 nextflow.enable.dsl = 2
 
 // import modules
-include { EstimateHeritabilityLdsc; ProcessLdscOutput; CountHeritabilitySnps } from './modules/EstimateHeritability'
+include { EstimateHeritabilityLdsc; ProcessLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise } from './modules/EstimateHeritability'
 include { WriteOutRes } from './modules/WriteOutRes'
 include { ExtractResults; ProcessResults } from './modules/CollectResults.nf'
 include { ProcessVuckovicGwasData } from './modules/ProcessGwas.nf'
@@ -141,6 +141,10 @@ workflow {
     // Run Heritability estimates
     ldsc_output_ch = EstimateHeritabilityLdsc(
         ldsc_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
+
+    EstimateHeritabilityLdsc(
+        process_gwas_ch.map { name, gws, file -> name }.collect(),
+        process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
 
     // Process LDSC logs
     ldsc_matrices_ch = ProcessLdscOutput(ldsc_output_ch)

@@ -122,17 +122,11 @@ process EstimateHeritabilityLdscAllPairwise {
 
     shell:
     // Should first limit to the trans variants
+    for(int i = 0; i<gwas.size(); i++) {
+        println(i);
+    }
     '''
-    for ((i = 0; i+1 < ${#f[@]}; i++)); do
-        echo ${f[i]}
-        echo ${f[@]:i+1}
-        /ldsc/ldsc.py \
-        --rg !{sumstats},!{gwas.join(",")} \
-        --ref-ld-chr !{ld_ch}/ \
-        --w-ld-chr !{ld_ch}/ \
-        --chisq-max 10000 \
-        --out !{gene}_rg
-    done
+    touch test_rg.log
     '''
 }
 
