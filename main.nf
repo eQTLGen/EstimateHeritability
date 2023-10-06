@@ -130,10 +130,10 @@ workflow {
         .map { row -> tuple(row[1], "cis", row[0]) }
     heritability_snps_trans = heritability_snps_file_ch.trans.splitCsv(header:false, sep:' ')
         .map { row -> tuple(row[1], "trans", row[0]) }
-    heritability_snps = heritability_snps_cis.concat(heritability_snps_trans).view()
+    heritability_snps = heritability_snps_cis.concat(heritability_snps_trans)
 
     results_ch_concatenated = results_ch.cis.concat(results_ch.trans)
-    ldsc_in_ch = results_ch_concatenated.join(heritability_snps, by:[0,1], remainder:false).view()
+    ldsc_in_ch = results_ch_concatenated.join(heritability_snps, by:[0,1], remainder:false)
 
     // Process GWAS data
     process_gwas_ch = ProcessVuckovicGwasData(gwas_input_ch, hapmap_ch)
