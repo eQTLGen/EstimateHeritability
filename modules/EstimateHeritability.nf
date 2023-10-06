@@ -159,7 +159,7 @@ process ProcessLdscOutput {
     publishDir "${params.output}", mode: 'copy', pattern: '*_h2.txt'
 
     input:
-      tuple val(name_a), val(annot_a), val(name_b), val(annot_b), path(ldsc_output)
+      tuple val(gene), val(annot), path(ldsc_output)
 
     output:
       path '*_h2.txt'
