@@ -50,9 +50,9 @@ process CountHeritabilitySnps {
         --out-prefix genes
 
     bedtools intersect -a "genes.cis.bed" -b !{oneKgBedFiles} | \
-        awk -F '\t' '{print $4}' | sort | uniq -c > "cis_gen_annot_M_5_50.txt"
-    bedtools intersect -v -a "genes_trans.bed" -b !{oneKgBedFiles} | \
-            awk -F '\t' '{print $4}' | sort | uniq -c > "trans_gen_annot_M_5_50.txt"
+        awk -F '\t' '{print $4}' | sort | uniq -c | sed 's/^ *//' > "cis_gen_annot_M_5_50.txt"
+    bedtools intersect -v -a "genes.trans.bed" -b !{oneKgBedFiles} | \
+            awk -F '\t' '{print $4}' | sort | uniq -c | sed 's/^ *//' > "trans_gen_annot_M_5_50.txt"
     '''
 }
 
@@ -101,17 +101,48 @@ process EstimateHeritabilityLdsc {
     --ref-ld-chr !{ld_ch}/ \
     --w-ld-chr !{ld_ch}/ \
     --chisq-max 10000 \
-    --M !{m_5_50}
+    --M !{m_5_50} \
     --out !{gene}_rg
     '''
 }
+
+process EstimateHeritabilityLdscAllPairwise {
+    container 'quay.io/cawarmerdam/ldsc:v0.3'
+    tag "ldsc_${annot}_${gene}"
+    errorStrategy = 'ignore'
+
+    input:
+      val name
+      path gwas
+      path ld_ch
+
+    output:
+      val name
+      path '*_rg.log'
+
+    shell:
+    // Should first limit to the trans variants
+    '''
+    for ((i = 0; i+1 < ${#f[@]}; i++)); do
+        echo ${f[i]}
+        echo ${f[@]:i+1}
+        /ldsc/ldsc.py \
+        --rg !{sumstats},!{gwas.join(",")} \
+        --ref-ld-chr !{ld_ch}/ \
+        --w-ld-chr !{ld_ch}/ \
+        --chisq-max 10000 \
+        --out !{gene}_rg
+    done
+    '''
+}
+
 
 process EstimateHeritabilityGenomicSem {
     errorStrategy = 'ignore'
 
     input:
       tuple val(gene), val(annot), path(sumstats)
-      tuple val(name), path(gwas)
+      tuple val(name), val(annot_b), path(gwas)
       path ld_ch
 
     output:
