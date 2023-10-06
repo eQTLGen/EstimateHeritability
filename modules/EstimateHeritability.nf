@@ -122,11 +122,11 @@ process EstimateHeritabilityLdscAllPairwise {
 
     shell:
     // Should first limit to the trans variants
-    for(int i = 0; i<gwas.size(); i++) {
-        println(i);
-    }
     '''
-    touch test_rg.log
+    for ((i = 0; i+1 < ${#f[@]}; i++)); do
+        echo ${f[i]}
+        echo ${f[@]:i+1}
+    done
     '''
 }
 
