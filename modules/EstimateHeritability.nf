@@ -123,6 +123,8 @@ process EstimateHeritabilityLdscAllPairwise {
     shell:
     // Should first limit to the trans variants
     '''
+    f=( !{gwas.join(" ")} )
+
     for ((i = 0; i+1 < ${#f[@]}; i++)); do
         echo ${f[i]}
         echo ${f[@]:i+1}
