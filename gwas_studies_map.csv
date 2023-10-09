@@ -1,30 +1,10 @@
-﻿Name,N,Path
-Red cell distribution width,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002404_buildGRCh37.tsv.gz
-Reticulocyte count,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002405_buildGRCh37.tsv.gz
-Reticulocyte fraction of red cells,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002406_buildGRCh37.tsv.gz
-White blood cell count,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002407_buildGRCh37.tsv.gz
-Basophil count,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002379_buildGRCh37.tsv.gz
-Basophil percentage of white cells,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002380_buildGRCh37.tsv.gz
-Eosinophil counts,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002381_buildGRCh37.tsv.gz
-Eosinophil percentage of white cells,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002382_buildGRCh37.tsv.gz
-Hematocrit,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002383_buildGRCh37.tsv.gz
-Hemoglobin,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002384_buildGRCh37.tsv.gz
-High light scatter reticulocyte count,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002385_buildGRCh37.tsv.gz
-High light scatter reticulocyte percentage of red cells,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002386_buildGRCh37.tsv.gz
-Immature fraction of reticulocytes,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002387_buildGRCh37.tsv.gz
-Lymphocyte count,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002388_buildGRCh37.tsv.gz
-Lymphocyte percentage of white cells,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002389_buildGRCh37.tsv.gz
-Mean corpuscular hemoglobin,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002390_buildGRCh37.tsv.gz
-Mean corpuscular hemoglobin concentration,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002391_buildGRCh37.tsv.gz
-Mean corpuscular volume,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002392_buildGRCh37.tsv.gz
-Monocyte count,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002393_buildGRCh37.tsv.gz
-Monocyte percentage of white cells,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002394_buildGRCh37.tsv.gz
-Mean platelet volume,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002395_buildGRCh37.tsv.gz
-Mean reticulocyte volume,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002396_buildGRCh37.tsv.gz
-Mean spheric corpuscular volume,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002397_buildGRCh37.tsv.gz
-Neutrophil count,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002398_buildGRCh37.tsv.gz
-Neutrophil percentage of white cells,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002399_buildGRCh37.tsv.gz
-Plateletcrit,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002400_buildGRCh37.tsv.gz
-Platelet distribution width,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002401_buildGRCh37.tsv.gz
-Platelet count,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002402_buildGRCh37.tsv.gz
-Red blood cell count,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/GCST90002403_buildGRCh37.tsv.gz
+Name,N,Path
+Basophil count,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/32888494-GCST90002379-EFO_0005090.h.tsv.gz
+Eosinophil counts,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/32888494-GCST90002381-EFO_0004842.h.tsv.gz
+High light scatter reticulocyte count,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/32888494-GCST90002385-EFO_0007986.h.tsv.gz
+Lymphocyte count,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/32888494-GCST90002388-EFO_0004587.h.tsv.gz
+Neutrophil count,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/32888494-GCST90002398-EFO_0004833.h.tsv.gz
+Platelet count,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/32888494-GCST90002402-EFO_0004309.h.tsv.gz
+Red blood cell count,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/32888494-GCST90002403-EFO_0004305.h.tsv.gz
+Reticulocyte count,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/32888494-GCST90002405-EFO_0007986.h.tsv.gz
+White blood cell count,408112,/gpfs/space/GI/eQTLGen/public_data/vuckovic_2020_blood_cell_traits/gwas_catalog/32888494-GCST90002407-EFO_0004308.h.tsv.gz
