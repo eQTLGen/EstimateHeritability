@@ -84,7 +84,7 @@ read_ldsc_logs <- function(filepath) {
     } else if (startsWith(line, "Summary of Genetic Correlation Results") & length(heritability_tables) > 0) {
       correlation_table <- as_tibble(fread(text=readLines(con, length(heritability_tables) + 1), header=T))
 
-    } else if (startsWith(line, "ERROR") {
+    } else if (startsWith(line, "ERROR")) {
       return NULL
     }
   }
