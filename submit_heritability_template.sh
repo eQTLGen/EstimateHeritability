@@ -31,7 +31,7 @@ ld_w_dir="/gpfs/space/GI/eQTLGen/public_data/ldsc/eur_w_ld_chr"
 variants="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/EstimateHeritability/data/matching_unambiguous_hapmap_variants.txt"
 hapmap="/gpfs/space/GI/eQTLGen/public_data/ldsc/w_hm3.snplist"
 
-gwas_map="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/EstimateHeritability/gwas_studies_map_subset.csv"
+gwas_map="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/EstimateHeritability/gwas_studies_map.csv"
 
 output_folder="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPCNoExpPC_2023-07-13"
 

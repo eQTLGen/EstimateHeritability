@@ -132,7 +132,7 @@ process EstimateHeritabilityLdscAllPairwise {
         --rg ${f[i]},${f[@]:i+1} \
         --ref-ld-chr !{ld_ch}/ \
         --w-ld-chr !{ld_ch}/ \
-        --out ${n[i]}_rg_${n[@]:i+1}
+        --out rg_${i}_${i+1}
     done
     '''
 }
