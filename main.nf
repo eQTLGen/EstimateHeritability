@@ -132,8 +132,7 @@ workflow {
         .map { row -> tuple(row[1], "trans", row[0]) }
     heritability_snps = heritability_snps_cis.concat(heritability_snps_trans)
 
-    results_ch_concatenated = results_ch.cis.concat(results_ch.trans)
-    ldsc_in_ch = results_ch_concatenated.join(heritability_snps, by:[0,1], remainder:false)
+    ldsc_in_ch = results_ch_concatenated.join(heritability_snps, by:[0,1], remainder:false).view()
 
     // Process GWAS data
     process_gwas_ch = ProcessVuckovicGwasData(gwas_input_ch, hapmap_ch)
