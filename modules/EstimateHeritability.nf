@@ -126,10 +126,12 @@ process EstimateHeritabilityLdscAllPairwise {
     f=( !{gwas.join(" ")} )
     n=( !{name.join(" ")} )
 
+    function join_by { local IFS="$1"; shift; echo "$*"; }
+
     for ((i = 0; i+1 < ${#f[@]}; i++)); do
 
         /ldsc/ldsc.py \
-        --rg ${f[i]},${f[@]:i+1} \
+        --rg ${f[i]},$(join_by , "${f[@]:i+1}") \
         --ref-ld-chr !{ld_ch}/ \
         --w-ld-chr !{ld_ch}/ \
         --out rg_${i}_${i+1}
