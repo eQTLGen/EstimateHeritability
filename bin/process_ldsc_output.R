@@ -53,6 +53,8 @@ read_ldsc_logs <- function(filepath) {
   sumstats <- c()
   current_sumstats <- ""
 
+  error <- FALSE
+
   while ( TRUE ) {
 
     # Read first line
@@ -85,11 +87,16 @@ read_ldsc_logs <- function(filepath) {
       correlation_table <- as_tibble(fread(text=readLines(con, length(heritability_tables) + 1), header=T))
 
     } else if (startsWith(line, "ERROR")) {
-      return NULL
+      error = TRUE
+      break
     }
   }
 
   close(con)
+
+  if (error) {
+      return(NULL)
+  }
 
   heritability_table <- bind_rows(heritability_tables[1], .id="p1") %>%
     rename("se" = "stderr") %>%
@@ -117,7 +124,7 @@ main <- function(argv = NULL) {
   # Process input
   table_proc <- read_ldsc_logs(ldsc_log)
 
-  if (!is.null(table_proc) & nrow(table_proc)>0) {
+  if (!is.null(table_proc)) {
 
     processed_table <- table_proc %>%
       mutate(gene_id = gene_id,
