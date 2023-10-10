@@ -148,7 +148,7 @@ workflow {
 
     // Process LDSC logs
     ldsc_matrices_ch = ProcessLdscOutput(ldsc_output_ch)
-        .collectFile(name:'result.txt', skip: 1, keepHeader: true)
+        .collectFile(name:'ldsc_table.txt', skip: 1, keepHeader: true, storeDir: params.output)
 
     // WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
 }
