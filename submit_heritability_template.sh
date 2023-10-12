@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --time=48:00:00
+#SBATCH --time=10:00:00
 #SBATCH -N 1
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem=2G
@@ -35,7 +35,7 @@ gwas_map="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/EstimateHer
 
 output_folder="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPCNoExpPC_2023-07-13"
 
-variants_bed="/gpfs/space/GI/eQTLGen/public_data/1000genomes/vol1/ftp/release/20130502/processed/variants.chrALL.hg38.M_5_50.txt"
+variants_bed="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/EstimateHeritability/data/variants.chrALL.hg38.w_hm3.M_5_50.bed"
 
 NXF_VER=21.10.6 ${nextflow_path}/nextflow run main.nf \
 --input ${empirical}/eqtls \
