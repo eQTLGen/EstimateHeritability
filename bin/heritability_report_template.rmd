@@ -7,21 +7,156 @@ output:
     toc: true
 ---
 
-#
+
 
 The code chunk appears:
 ```{r, message = FALSE, warning = FALSE, echo = FALSE}
 library(data.table)
 library(tidyverse)
+library(extrafont)
 
-<- fread(params.table)
+# Declare constants
+loadfonts()
+old <- theme_set(theme_classic(base_size = 10))
+theme_update(
+  line = element_line(
+    colour = "black", size = (0.5 / (ggplot2::.pt * 72.27/96)),
+    linetype = 1, lineend = "butt", arrow = F, inherit.blank = T),
+  strip.background = element_rect(colour = NA, fill = NA),
+  panel.grid.minor = element_blank(),
+  text = element_text(family="Helvetica"),
+  title = element_text(colour = "#595A5C", face = "bold"),
+)
+
+expected_column_names <- c("p1", "p2", "rg", "se", "z", "p", "h2_obs", "h2_obs_se", "h2_int", "h2_int_se", "gcov_int", "gcov_int_se", "gene", "annot")
+
+#input_path <- params.input
+input_path1 <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2023-10-05/ldsc_table.txt"
+input_path2 <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPCNoExpPC_2023-07-13/ldsc_table.txt"
+
 ```
 
-Type any R code in the chunk, for example:
-```{r}
-mycars <- within(mtcars, { cyl <- ordered(cyl) })
-mycars
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+gamma_moments_of_methods <- function(h2_obs, h2_obs_se) {
+    median_squared_se <- median(h2_obs_se)^2
+    k_theta <- mean(h2_obs)
+    k_theta2 <- var(h2_obs_se) - median_squared_se
+
+    theta <- k_theta / k_theta2
+    k <- k_theta / theta
+    return(list("theta" = theta, "k" = k))
+}
+
 ```
 
-Now, click the **Run** button on the chunk toolbar to [execute](https://www.jetbrains.com/help/pycharm/r-markdown.html#run-r-code) the chunk code. The result should be placed under the chunk.
-Click the **Knit and Open Document** to build and preview an output.
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+mr_genes <- fread("/gpfs/space/GI/eQTLGen/freeze2/eqtl_mapping/input/mr_GenesToInclude_2023-07-14.txt")
+
+res_table <- fread(input_path1, col.names=expected_column_names) %>%
+    mutate(marker_gene = gene %in% mr_genes$ID)
+res_table_noPCs <- fread(input_path2, col.names=expected_column_names) %>%
+    mutate(marker_gene = gene %in% mr_genes$ID)
+
+res_table_concat <- bind_rows(list("20PSs" = res_table, "NoPCs" = res_table_noPCs), .id = "meta_analysis")
+
+h2_table_concat <- res_table_concat %>% filter(p1 == p2)
+
+h2_table <- res_table %>% filter(p1 == p2)
+
+h2_table %>% group_by(annot, marker_gene) %>%
+    summarise(median_h2 = median(h2_obs),
+              mean_h2 = mean(h2_obs))
+
+trans_h2_table <- h2_table %>% filter(annot == "trans", !marker_gene)
+cis_h2_table <- h2_table %>% filter(annot == "cis", !marker_gene)
+
+h2_gamma_trans <- gamma_moments_of_methods(trans_h2_table$h2_obs, trans_h2_table$h2_obs_se)
+h2_gamma_cis <- gamma_moments_of_methods(cis_h2_table$h2_obs, cis_h2_table$h2_obs_se)
+
+draw <- tibble(x = seq(-0.001, 1, by=0.001)) %>%
+    mutate(trans = dgamma(x, scale=h2_gamma_trans$theta, shape=h2_gamma_trans$k),
+           cis = dgamma(x, scale=h2_gamma_cis$theta, shape=h2_gamma_cis$k)) %>%
+    pivot_longer(cols = c(trans, cis), names_to = "annot", values_to = "h2_est")
+
+p <- ggplot(h2_table, aes(rg)) +
+    geom_histogram(aes(y = after_stat(density))) +
+    #geom_line(data=draw, aes(x = x, y = h2_est), inherit.aes=F) +
+    facet_wrap(vars(annot, marker_gene), scales="free")
+
+ggsave("distributions_h2.pdf", p, width = 6, height = 6)
+
+p <- ggplot(h2_table %>% filter(!marker_gene), aes(h2_obs, h2_obs_se)) +
+    geom_point() +
+    facet_wrap(vars(annot), scales="free")
+
+ggsave("se_h2.pdf", p, width = 6, height = 6)
+
+
+h2_table_concat %>% group_by(annot, marker_gene, meta_analysis) %>%
+    summarise(median_h2 = median(h2_obs),
+              mean_h2 = mean(h2_obs))
+
+
+p <- ggplot(h2_table_concat %>% filter(marker_gene), aes(h2_obs)) +
+    geom_histogram(aes(y = after_stat(density))) +
+    facet_wrap(vars(annot, meta_analysis), scales="free")
+
+ggsave("distributions_mr_h2.pdf", p, width = 6, height = 6)
+
+
+p <- ggplot(h2_table %>% pivot_wider(id_cols = c(gene), values_from=c(h2_obs, h2_obs_se), names_from=annot),
+            aes(h2_obs_cis, h2_obs_trans)) +
+    geom_point() +
+    geom_linerange(aes(xmin=h2_obs_cis-h2_obs_se_cis, xmax=h2_obs_cis+h2_obs_se_cis)) +
+    geom_linerange(aes(ymin=h2_obs_trans-h2_obs_se_trans, ymax=h2_obs_trans+h2_obs_se_trans))
+
+ggsave("scatter_h2.pdf", p)
+
+p <- ggplot(h2_table,
+            aes(x=gene, h2_obs)) +
+    geom_point() +
+    geom_linerange(aes(ymin=h2_obs-h2_obs_se, ymax=h2_obs+h2_obs_se)) +
+    facet_wrap(vars(annot), scales="free_x") +
+    theme(axis.text = element_text(angle = 90))
+
+ggsave("range_h2.pdf", p)
+
+combiend <- res_table_concat %>%
+    inner_join((h2_table_concat %>% filter(annot == "trans") %>% select(gene, meta_analysis, h2_obs) %>% distinct()),
+               by = c("gene", "meta_analysis"), suffix=c("_gwas_ctc", "_gene")) %>%
+    mutate(gen_cov = rg * (sqrt(h2_obs_gene) * sqrt(h2_obs_gwas_ctc))) %>%
+    filter(annot == "trans", p1 != p2)
+
+p <- ggplot(combiend %>% filter(marker_gene, annot == "trans", p1 != p2), aes(h2_obs_gene, gen_cov, colour = p2)) +
+    geom_point() +
+    facet_wrap(vars(meta_analysis)) +
+    theme(legend.position = "bottom")
+
+ggsave("covariances_dotplot.pdf", p, width = 6, height = 6)
+
+
+p <- ggplot(combiend %>% filter(marker_gene, annot == "trans", p1 != p2), aes(p2, gen_cov, colour = meta_analysis)) +
+    geom_violin() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave("covariances_violin.pdf", p, width = 6, height = 6)
+
+
+p <- ggplot(combiend %>% filter(annot == "trans", p1 != p2, meta_analysis == "20PSs"), aes(h2_obs_gene, gen_cov, colour = p2)) +
+    geom_point() +
+    facet_wrap(vars(marker_gene)) +
+    theme(legend.position = "bottom")
+
+ggsave("covariances_dotplot_mr.pdf", p, width = 6, height = 6)
+
+p <- ggplot(combiend %>% filter(annot == "trans", p1 != p2, meta_analysis == "20PSs"), aes(p2, gen_cov, colour = marker_gene)) +
+    geom_violin() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave("covariances_violin_mr.pdf", p, width = 6, height = 6)
+
+
+dpeEZ8b7sZ2HfWS
+```

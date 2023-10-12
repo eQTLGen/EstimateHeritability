@@ -208,15 +208,23 @@ def main(argv=None):
 
     print(gene_dataframe.head())
 
-    cohorts = np.array(args.cohorts)
-    overview_df = pd.read_table(os.path.join(inclusion_path, table_name), index_col=False)
+    overview_df = pd.read_table(os.path.join(inclusion_path, "filter_logs.log"), index_col=False)
     overview_df.set_index('Dataset', inplace=True)
+    total_sample_size = overview_df.loc[np.array(args.cohorts), "N"].sum()
 
     eqtls = pd.read_csv(args.input_file, sep='\t')
 
     print(eqtls.head())
 
-    eqtls_filtered = eqtls.loc[eqtls.sample_size > ]
+    sample_size_threshold = total_sample_size * 0.8
+    pass_sample_size_threshold = (eqtls.sample_size > sample_size_threshold)
+
+    print("Total theoretical sample size = {}".format(total_sample_size))
+    print("Sample size threshold = {}".format(sample_size_threshold))
+    print("Frequency of passed samples:")
+    print(np.unique(pass_sample_size_threshold, return_counts = True))
+
+    eqtls_filtered = eqtls.loc[eqtls.sample_size > total_sample_size * 0.8]
 
     # Perform method
     eqtls_annotated = (
