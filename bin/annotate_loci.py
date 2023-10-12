@@ -183,6 +183,10 @@ def main(argv=None):
                         help='Path to a GTF or GFF3 file')
     parser.add_argument('--out-prefix', dest='out_prefix', required=True,
                         help='Prefix to use for output file names')
+    parser.add_argument('--cohorts', dest='cohorts', required=True, nargs='+',
+                            help='Names of cohorts used in the meta-analysis')
+    parser.add_argument('--inclusion-path', dest='inclusion_path', required=True,
+                        help='Inclusion_path')
 
     args = parser.parse_args(argv[1:])
     print(args)
@@ -204,13 +208,19 @@ def main(argv=None):
 
     print(gene_dataframe.head())
 
+    cohorts = np.array(args.cohorts)
+    overview_df = pd.read_table(os.path.join(inclusion_path, table_name), index_col=False)
+    overview_df.set_index('Dataset', inplace=True)
+
     eqtls = pd.read_csv(args.input_file, sep='\t')
 
     print(eqtls.head())
 
+    eqtls_filtered = eqtls.loc[eqtls.sample_size > ]
+
     # Perform method
     eqtls_annotated = (
-        eqtls
+        eqtls_filtered
         .merge(variant_reference, how="inner", on="variant", validate="m:1")
         .merge(gene_dataframe, how="inner", left_on="phenotype", right_on="gene_id",
                suffixes=('', '_gene'), validate="m:1"))

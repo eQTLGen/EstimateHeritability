@@ -70,6 +70,13 @@ Channel.fromPath(params.gwas_map)
     .view()
     .set { gwas_input_ch }
 
+cohorts_ch = Channel.fromPath(params.mastertable)
+    .ifEmpty { error "Cannot find master table from: ${params.mastertable}" }
+    .splitCsv(header: true, sep: '\t', strip: true)
+    .map{row -> [ row.cohort_new_name ]}
+    .collect()
+
+inclusion_step_output_ch = file(params.inclusion_step_output)
 one_kg_bed_ch = file(params.variants_bed)
 variants_ch = file(params.variants)
 hapmap_ch = file(params.hapmap)
@@ -117,7 +124,7 @@ workflow {
         groupTuple()
 
     // Split summary statistics in cis and trans regions
-    results_ch = ProcessResults(loci_extracted_ch, variant_reference_ch, gene_reference_ch)
+    results_ch = ProcessResults(loci_extracted_ch, variant_reference_ch, gene_reference_ch, inclusion_step_output_ch, cohorts_ch)
 
     // Combine results in a single channel
     results_ch_concatenated = results_ch.cis.concat(results_ch.trans)
