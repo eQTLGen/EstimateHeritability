@@ -45,6 +45,8 @@ process ProcessResults {
         tuple val(locus_string), path(files, stageAs: "locus_*.csv")
         path variantReference
         path geneReference
+        path inclusionDir
+        val cohorts
 
     output:
         tuple val(locus_string), val("cis"), path("annotated.${locus_string}_cis.csv.gz"), emit: cis, optional: true
@@ -57,6 +59,8 @@ process ProcessResults {
 
         annotate_loci.py \
             --input-file concatenated.${locus_string}.csv \
+            --cohorts ${cohorts.join(' ')} \
+            --inclusion-path ${inclusionDir} \
             --variant-reference ${variantReference} \
             --gene-ref ${geneReference} \
             --out-prefix annotated.${locus_string}
