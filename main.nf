@@ -125,6 +125,8 @@ workflow {
     // Count the number of heritability variants for each gene
     heritability_snps_file_ch = CountHeritabilitySnps(gene_reference_ch, one_kg_bed_ch)
 
+    heritability_snps_file_ch.trans.view()
+
     // Heritability SNPs
     heritability_snps_cis = heritability_snps_file_ch.cis.splitCsv(header:false, sep:' ')
         .map { row -> tuple(row[1], "cis", row[0]) }
@@ -132,7 +134,7 @@ workflow {
         .map { row -> tuple(row[1], "trans", row[0]) }
     heritability_snps = heritability_snps_cis.concat(heritability_snps_trans)
 
-    ldsc_in_ch = results_ch_concatenated.join(heritability_snps, by:[0,1], remainder:false).view()
+    ldsc_in_ch = results_ch_concatenated.join(heritability_snps, by:[0,1], remainder:false)
 
     // Process GWAS data
     process_gwas_ch = ProcessVuckovicGwasData(gwas_input_ch, hapmap_ch)
