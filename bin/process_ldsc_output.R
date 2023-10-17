@@ -67,6 +67,15 @@ read_ldsc_logs <- function(filepath) {
       match <- str_match(line, "Reading summary statistics from (.+) ...")
       sumstats <- c(sumstats, match[2])
 
+    } else if (startsWith(line, "Total Observed scale h2")) {
+      current_sumstats <- sumstats[1]
+
+      message(current_sumstats)
+      table <- read_heritability_table(
+        c(line, readLines(con, n = 4)))
+
+      heritability_tables[[sumstats[1]]] <- table
+
     } else if (startsWith(line, "Heritability of phenotype")) {
       match <- str_match(line, "Heritability of phenotype (\\d+)(\\/\\d+)?")
       current_sumstats <- sumstats[as.numeric(match[2])]
@@ -87,7 +96,7 @@ read_ldsc_logs <- function(filepath) {
       correlation_table <- as_tibble(fread(text=readLines(con, length(heritability_tables) + 1), header=T))
 
     } else if (startsWith(line, "ERROR")) {
-      error = TRUE
+      error <- TRUE
       break
     }
   }
@@ -103,6 +112,10 @@ read_ldsc_logs <- function(filepath) {
     pivot_wider(id_cols = p1, values_from = c("estimate", "se"), names_from = "name", names_glue = "{name}_{.value}") %>%
     rename_with(~str_remove(., '_estimate')) %>%
     mutate(p2 = p1)
+
+  if (is.null(correlation_table)) {
+    return(heritability_table)
+  }
 
   return(bind_rows(correlation_table, heritability_table))
 }
