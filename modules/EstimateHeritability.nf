@@ -78,6 +78,8 @@ process EstimateHeritabilityLdsc2 {
     --ref-ld-chr !{ld_ch}/ \
     --w-ld-chr !{ld_ch}/ \
     --chisq-max 10000 \
+    --print-cov \
+    --print-delete-vals \
     --out !{name_a.replaceAll("\\s","_")}_rg_!{name_b.replaceAll("\\s","_")}
     '''
 }
@@ -104,7 +106,9 @@ process EstimateHeritabilityLdsc {
     --w-ld-chr !{ld_ch}/ \
     --chisq-max 10000 \
     --M !{m_5_50} \
-    --out !{gene}_rg
+    --out !{gene}_rg \
+    --print-cov \
+    --print-delete-vals \
     '''
 }
 
