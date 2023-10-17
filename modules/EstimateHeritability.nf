@@ -131,7 +131,7 @@ process EstimateTransHeritabilityLdsc {
       path ld_ch
 
     output:
-      tuple val(gene), val(annot), path('*_h2.log'), path(*_h2.delete)
+      tuple val(gene), val(annot), path('*_h2.log'), path('*_h2.delete')
 
     shell:
     '''
