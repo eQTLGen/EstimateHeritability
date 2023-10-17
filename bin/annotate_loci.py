@@ -216,7 +216,7 @@ def main(argv=None):
 
     print(eqtls.head())
 
-    sample_size_threshold = total_sample_size * 0.8
+    sample_size_threshold = total_sample_size * 0.5
     pass_sample_size_threshold = (eqtls.sample_size > sample_size_threshold)
 
     print("Total theoretical sample size = {}".format(total_sample_size))
@@ -224,7 +224,8 @@ def main(argv=None):
     print("Frequency of passed samples:")
     print(np.unique(pass_sample_size_threshold, return_counts = True))
 
-    eqtls_filtered = eqtls.loc[eqtls.sample_size > total_sample_size * 0.8]
+    eqtls_filtered = eqtls.loc[pass_sample_size_threshold]
+    # For each gene, check what the number of variants are. If it is lower than
 
     # Perform method
     eqtls_annotated = (
@@ -252,7 +253,8 @@ def main(argv=None):
 
     if ldsc_processed_output.loc[cis].shape[0] > 0:
         ldsc_processed_output.loc[cis].to_csv("{}_cis.csv.gz".format(args.out_prefix), sep="\t", index=False)
-    ldsc_processed_output.loc[trans].to_csv("{}_trans.csv.gz".format(args.out_prefix), sep="\t", index=False)
+    if ldsc_processed_output.loc[trans].shape[0] > 0:
+        ldsc_processed_output.loc[trans].to_csv("{}_trans.csv.gz".format(args.out_prefix), sep="\t", index=False)
 
     # Output
     return 0
