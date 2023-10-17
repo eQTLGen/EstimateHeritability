@@ -208,7 +208,7 @@ def main(argv=None):
 
     print(gene_dataframe.head())
 
-    overview_df = pd.read_table(os.path.join(inclusion_path, "filter_logs.log"), index_col=False)
+    overview_df = pd.read_table(os.path.join(args.inclusion_path, "filter_logs.log"), index_col=False)
     overview_df.set_index('Dataset', inplace=True)
     total_sample_size = overview_df.loc[np.array(args.cohorts), "N"].sum()
 
