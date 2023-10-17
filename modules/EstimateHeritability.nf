@@ -71,7 +71,6 @@ process EstimateHeritabilityLdsc2 {
       tuple val(name_a), val(annot_a), val(name_b), val(annot_b), path('*_rg_*.log')
 
     shell:
-    // Should first limit to the trans variants
     '''
     /ldsc/ldsc.py \
     --rg !{sumstats_a},!{sumstats_b} \
@@ -84,7 +83,8 @@ process EstimateHeritabilityLdsc2 {
     '''
 }
 
-process EstimateHeritabilityLdsc {
+
+process EstimateCisHeritabilityLdsc {
     container 'quay.io/cawarmerdam/ldsc:v0.3'
     tag "ldsc_${annot}_${gene}"
     errorStrategy = 'ignore'
@@ -98,7 +98,42 @@ process EstimateHeritabilityLdsc {
       tuple val(gene), val(annot), path('*_h2.log')
 
     shell:
-    // Should first limit to the trans variants
+    '''
+    /ldsc/ldsc.py \
+    --h2 !{sumstats} \
+    --ref-ld-chr !{ld_ch}/ \
+    --w-ld-chr !{ld_ch}/ \
+    --chisq-max 10000 \
+    --M !{m_5_50} \
+    --out !{gene}_h2 \
+
+    #/ldsc/ldsc.py \
+    #--rg !{sumstats},!{gwas.join(",")} \
+    #--ref-ld-chr !{ld_ch}/ \
+    #--w-ld-chr !{ld_ch}/ \
+    #--chisq-max 10000 \
+    #--M !{m_5_50} \
+    #--out !{gene}_rg \
+    #--print-cov \
+    #--print-delete-vals
+    '''
+}
+
+
+process EstimateTransHeritabilityLdsc {
+    container 'quay.io/cawarmerdam/ldsc:v0.3'
+    tag "ldsc_${annot}_${gene}"
+    errorStrategy = 'ignore'
+
+    input:
+      tuple val(gene), val(annot), path(sumstats), val(m_5_50)
+      path gwas
+      path ld_ch
+
+    output:
+      tuple val(gene), val(annot), path('*_h2.log'), path(*_h2.delete)
+
+    shell:
     '''
     /ldsc/ldsc.py \
     --h2 !{sumstats} \
