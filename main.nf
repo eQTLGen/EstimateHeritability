@@ -148,6 +148,8 @@ workflow {
     ldsc_trans_output_ch = EstimateTransHeritabilityLdsc(
         ldsc_trans_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
 
+    ldsc_trans_output_ch.view()
+
     EstimateHeritabilityLdscAllPairwise(
         process_gwas_ch.map { name, gws, file -> name }.collect(),
         process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
@@ -158,7 +160,6 @@ workflow {
     ldsc_trans_matrices_ch = ProcessTransLdscOutput(ldsc_trans_output_ch)
         .collectFile(name:'ldsc_table_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
 
-    ldsc_trans_output_ch.view()
     // Process LDSC stuff
     ProcessLdscDeleteVals(
         ldsc_trans_output_ch.map { name, gws, file, del -> name }
