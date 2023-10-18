@@ -227,3 +227,22 @@ process ProcessLdscOutput {
     process_ldsc_output.R !{gene} !{annot} !{ldsc_output}
     '''
 }
+
+
+process ProcessLdscOutput {
+    publishDir "${params.output}", mode: 'copy', pattern: '*_h2.txt'
+
+    input:
+      val gene
+      path ldsc_delete_vals
+      path ldsc_matrix
+
+    output:
+      path '*_h2.txt'
+
+    shell:
+    // Should first limit to the trans variants
+    '''
+    process_delete_vals.R --delete-vals !{ldsc_delete_vals.join(' ')} --h2 !{ldsc_matrix}
+    '''
+}
