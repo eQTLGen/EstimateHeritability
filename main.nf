@@ -158,6 +158,7 @@ workflow {
     ldsc_trans_matrices_ch = ProcessTransLdscOutput(ldsc_trans_output_ch)
         .collectFile(name:'ldsc_table_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
 
+    ldsc_trans_output_ch.view()
     // Process LDSC stuff
     ProcessLdscDeleteVals(
         ldsc_trans_output_ch.map { name, gws, file, del -> name }
