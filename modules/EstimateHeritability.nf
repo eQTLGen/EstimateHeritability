@@ -229,7 +229,7 @@ process ProcessLdscOutput {
 }
 
 
-process ProcessLdscOutput {
+process ProcessLdscDeleteVals {
     publishDir "${params.output}", mode: 'copy', pattern: '*_h2.txt'
 
     input:
