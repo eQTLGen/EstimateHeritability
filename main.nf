@@ -7,7 +7,7 @@
 nextflow.enable.dsl = 2
 
 // import modules
-include { EstimateTransHeritabilityLdsc; EstimateCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise } from './modules/EstimateHeritability'
+include { EstimateTransHeritabilityLdsc; EstimateCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise; ProcessLdscDeleteVals } from './modules/EstimateHeritability'
 include { WriteOutRes } from './modules/WriteOutRes'
 include { ExtractResults; ProcessResults } from './modules/CollectResults.nf'
 include { ProcessVuckovicGwasData } from './modules/ProcessGwas.nf'
@@ -157,6 +157,12 @@ workflow {
         .collectFile(name:'ldsc_table_cis.txt', skip: 1, keepHeader: true, storeDir: params.output)
     ldsc_trans_matrices_ch = ProcessTransLdscOutput(ldsc_trans_output_ch)
         .collectFile(name:'ldsc_table_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
+
+    // Process LDSC stuff
+    ProcessLdscDeleteVals(
+        ldsc_trans_output_ch.map { name, gws, file, del -> name }
+        ldsc_trans_output_ch.map { name, gws, file, del -> del }
+        ldsc_trans_matrices_ch)
 
     // WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
 }
