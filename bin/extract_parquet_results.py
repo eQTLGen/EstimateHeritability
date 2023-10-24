@@ -348,8 +348,8 @@ def main(argv=None):
 
     qtl_cohort_filter = None
 
-    if args.cohort is not None:
-        qtl_cohort_filter = QtlCohortFilter.from_list(args.cohort)
+    if args.cohorts is not None:
+        qtl_cohort_filter = QtlCohortFilter.from_list(args.cohorts)
 
     if loci is None:
         print("Starting export")
