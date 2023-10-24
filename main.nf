@@ -119,9 +119,9 @@ workflow {
 
     if (params.per_cohort) {
         // Extract loci
-        loci_extracted_ch = ExtractResultsPerCohort(input_parquet_ch, variant_reference_ch, variants_ch, genes_buffered_ch, params.cols, cohorts_ch)
+        loci_extracted_ch = ExtractResultsPerCohort(input_parquet_ch, variant_reference_ch, variants_ch, genes_buffered_ch, params.cols, cohorts_ch.collect())
             .flatten()
-            .map { cohort, file ->
+            .map { file ->
                    def key = file.name.toString().tokenize('.').get(1)
                    return tuple(key, file) }
             groupTuple()

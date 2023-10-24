@@ -51,7 +51,7 @@ process ExtractResultsPerCohort {
         val cohort
 
     output:
-        tuple val(cohort), path("extracted*out.csv")
+        path "extracted*out.csv"
 
     shell:
         variants_arg = (variants.name != 'NO_FILE') ? "--variants-file ${variants}" : ""
