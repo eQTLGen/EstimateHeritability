@@ -30,13 +30,13 @@ main <- function(argv = NULL) {
 
   args <- parser$parse_args(argv)
 
-  mean_hsq <- mean(fread(args$h2) %>% pull(h2))
+  mean_hsq <- mean(fread(args$h2) %>% pull(h2_obs))
 
-  delete_values <- do.call(cbind(lapply(args$delete_vals, function(path) {
+  delete_values <- do.call(cbind, lapply(args$delete_vals, function(path) {
     fread(path, header=F)$V1
-  })))
+  }))
 
-  mean_delete_values <- apply(delete_values, 2, mean)
+  mean_delete_values <- apply(delete_values, 1, mean)
 
   pseudovalues <- 200 * mean_hsq - 199 * mean_delete_values
 
