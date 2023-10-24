@@ -116,7 +116,7 @@ workflow {
     genes_buffered_ch = genes_ch.collate(gene_chunk_size)
 
     // Extract loci
-    loci_extracted_ch = ExtractResults(input_parquet_ch, variant_reference_ch, variants_ch, genes_buffered_ch, params.cols)
+    loci_extracted_ch = ExtractResults(input_parquet_ch, variant_reference_ch, variants_ch, genes_buffered_ch, params.cols, params.per_cohort)
         .flatten()
         .map { file ->
                def key = file.name.toString().tokenize('.').get(1)
@@ -148,8 +148,6 @@ workflow {
     ldsc_trans_output_ch = EstimateTransHeritabilityLdsc(
         ldsc_trans_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
 
-    ldsc_trans_output_ch.view()
-
     EstimateHeritabilityLdscAllPairwise(
         process_gwas_ch.map { name, gws, file -> name }.collect(),
         process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
@@ -162,8 +160,8 @@ workflow {
 
     // Process LDSC stuff
     ProcessLdscDeleteVals(
-        ldsc_trans_output_ch.map { name, gws, file, del -> name }
-        ldsc_trans_output_ch.map { name, gws, file, del -> del }
+        ldsc_trans_output_ch.map { name, gws, file, del -> name }.collect(),
+        ldsc_trans_output_ch.map { name, gws, file, del -> del }.collect(),
         ldsc_trans_matrices_ch)
 
     // WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
