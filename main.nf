@@ -74,7 +74,6 @@ cohorts_ch = Channel.fromPath(params.mastertable)
     .ifEmpty { error "Cannot find master table from: ${params.mastertable}" }
     .splitCsv(header: true, sep: '\t', strip: true)
     .map{row -> [ row.cohort_new_name ]}
-    .collect()
 
 inclusion_step_output_ch = file(params.inclusion_step_output)
 one_kg_bed_ch = file(params.variants_bed)
@@ -115,16 +114,26 @@ workflow {
     // Buffer genes
     genes_buffered_ch = genes_ch.collate(gene_chunk_size)
 
-    // Extract loci
-    loci_extracted_ch = ExtractResults(input_parquet_ch, variant_reference_ch, variants_ch, genes_buffered_ch, params.cols)
-        .flatten()
-        .map { file ->
-               def key = file.name.toString().tokenize('.').get(1)
-               return tuple(key, file) }
-        groupTuple()
+    if (params.per_cohort) {
+        // Extract loci
+        loci_extracted_ch = ExtractResultsPerCohort(input_parquet_ch, variant_reference_ch, variants_ch, genes_buffered_ch, params.cols, cohorts_ch)
+            .flatten()
+            .map { cohort, file ->
+                   def key = file.name.toString().tokenize('.').get(1)
+                   return tuple(key, file) }
+            groupTuple()
+    } else {
+        // Extract loci
+        loci_extracted_ch = ExtractResults(input_parquet_ch, variant_reference_ch, variants_ch, genes_buffered_ch, params.cols)
+            .flatten()
+            .map { file ->
+                   def key = file.name.toString().tokenize('.').get(1)
+                   return tuple(key, file) }
+            groupTuple()
+    }
 
     // Split summary statistics in cis and trans regions
-    results_ch = ProcessResults(loci_extracted_ch, variant_reference_ch, gene_reference_ch, inclusion_step_output_ch, cohorts_ch)
+    results_ch = ProcessResults(loci_extracted_ch, variant_reference_ch, gene_reference_ch, inclusion_step_output_ch, cohorts_ch.collect())
 
     // Count the number of heritability variants for each gene
     heritability_snps_file_ch = CountHeritabilitySnps(gene_reference_ch, one_kg_bed_ch)
@@ -162,8 +171,8 @@ workflow {
 
     // Process LDSC stuff
     ProcessLdscDeleteVals(
-        ldsc_trans_output_ch.map { name, gws, file, del -> name }
-        ldsc_trans_output_ch.map { name, gws, file, del -> del }
+        ldsc_trans_output_ch.map { name, gws, file, del -> name }.collect(),
+        ldsc_trans_output_ch.map { name, gws, file, del -> del }.collect(),
         ldsc_trans_matrices_ch)
 
     // WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
