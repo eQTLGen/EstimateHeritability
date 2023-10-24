@@ -20,9 +20,11 @@ nextflow_path=/gpfs/space/GI/eQTLGen/tools/
 
 ldsc_sources="/gpfs/space/GI/eQTLGen/freeze2/tools/ldsc"
 
+mastertable="/gpfs/space/GI/eQTLGen/freeze2/eqtl_mapping/input/MasterTable_newCohorts_2023-07-13_correctedCohortNames.txt"
 empirical="/gpfs/space/GI/eQTLGen/freeze2/eqtl_mapping/output/empirical_4GenPCNoExpPC_2023-07-13_PerGene"
 #empirical="/gpfs/space/home/warmerda/eQTLGen/freeze2/eqtl_mapping/output/empirical_4GenPC20ExpPC_2023-05-27_PerGene"
 genes="/gpfs/space/GI/eQTLGen/freeze2/eqtl_mapping/output/empirical_4GenPCNoExpPC_2023-07-13_PerGene/phenotypes_unique.txt"
+inclusion_step_output="/gpfs/space/GI/eQTLGen/freeze2/InclusionLists/output_2023-10-03_all"
 
 variant_reference="/gpfs/space/GI/eQTLGen/freeze1/eqtl_mapping/MetaAnalysis/bin/hase/data/1000G-30x.ref.gz"
 gene_reference="/gpfs/space/GI/eQTLGen/freeze1/InputFilesForPaper/2023-01-28_MetaAnalysis/data/Homo_sapiens.GRCh38.106.gtf.gz"
@@ -40,6 +42,7 @@ variants_bed="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/Estimat
 NXF_VER=21.10.6 ${nextflow_path}/nextflow run main.nf \
 --input ${empirical}/eqtls \
 --genes ${genes} \
+--mastertable ${mastertable} \
 --variant_reference ${variant_reference} \
 --gene_reference ${gene_reference} \
 --output ${output_folder} \
@@ -49,6 +52,7 @@ NXF_VER=21.10.6 ${nextflow_path}/nextflow run main.nf \
 --variants_bed ${variants_bed} \
 --gwas_map ${gwas_map} \
 --ldsc_source ${ldsc_sources} \
+--inclusion_step_output ${inclusion_step_output} \
 -resume \
 -profile slurm,singularity
 
