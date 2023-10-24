@@ -99,9 +99,9 @@ h2_table_concat %>% group_by(annot, marker_gene, meta_analysis) %>%
               mean_h2 = mean(h2_obs))
 
 
-p <- ggplot(h2_table_concat %>% filter(marker_gene), aes(h2_obs)) +
+p <- ggplot(h2_table_concat, aes(h2_obs)) +
     geom_histogram(aes(y = after_stat(density))) +
-    facet_wrap(vars(annot, meta_analysis), scales="free")
+    facet_wrap(vars(annot), scales="free")
 
 ggsave("distributions_mr_h2.pdf", p, width = 6, height = 6)
 
