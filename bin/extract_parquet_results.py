@@ -212,7 +212,7 @@ class QtlResultProcessor:
     def get_filters(self):
         base_filter_list = [self.gene_filter.get_filter()]
         if self.cohort_filter is not None:
-            base_filter_list.append(self.cohort_filter)
+            base_filter_list.append(self.cohort_filter.get_filter())
         if self.variant_filters is not None:
             filter_list = [base_filter_list + var_filter.get_filters() for var_filter in self.variant_filters]
         else:
