@@ -71,7 +71,7 @@ process ExtractResultsPerCohort {
             --genes !{genes.join(' ')} \
             !{variants_arg} \
             --cols '!{cols}' \
-            --cohort '!{cohort}' \
+            --cohort !{cohort.join(' ')} \
             --output-prefix extracted.!{genes.join('_')}
 
         rm -r tmp_eqtls
