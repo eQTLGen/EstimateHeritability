@@ -7,7 +7,7 @@
 nextflow.enable.dsl = 2
 
 // import modules
-include { EstimateTransHeritabilityLdsc; EstimateCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise; ProcessLdscDeleteVals } from './modules/EstimateHeritability'
+include { EstimateTransHeritabilityLdsc; EstimateTransHeritabilityLdsc as EstimateGwHeritabilityLdsc; EstimateCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise; ProcessLdscDeleteVals } from './modules/EstimateHeritability'
 include { WriteOutRes } from './modules/WriteOutRes'
 include { ExtractResults; ExtractResultsPerCohort; ProcessResults } from './modules/CollectResults.nf'
 include { ProcessVuckovicGwasData } from './modules/ProcessGwas.nf'
@@ -146,9 +146,12 @@ workflow {
         .map { row -> tuple(row[1], "cis", row[0]) }
     heritability_snps_trans = heritability_snps_file_ch.trans.splitCsv(header:false, sep:' ')
         .map { row -> tuple(row[1], "trans", row[0]) }
+    heritability_snps_gw = heritability_snps_file_ch.gw.splitCsv(header:false, sep:' ')
+        .map { row -> tuple(row[1], "gw", row[0]) }
 
     ldsc_cis_in_ch = results_ch.cis.join(heritability_snps_cis, by:[0,1], remainder:false)
     ldsc_trans_in_ch = results_ch.trans.join(heritability_snps_trans, by:[0,1], remainder:false)
+    ldsc_gw_in_ch = results_ch.trans.join(heritability_snps_gw, by:[0,1], remainder:false)
 
     // Process GWAS data
     process_gwas_ch = ProcessVuckovicGwasData(gwas_input_ch, hapmap_ch)
@@ -160,6 +163,9 @@ workflow {
     ldsc_trans_output_ch = EstimateTransHeritabilityLdsc(
         ldsc_trans_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
 
+    ldsc_gw_output_ch = EstimateGwHeritabilityLdsc(
+        ldsc_gw_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
+
     EstimateHeritabilityLdscAllPairwise(
         process_gwas_ch.map { name, gws, file -> name }.collect(),
         process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
@@ -169,6 +175,8 @@ workflow {
         .collectFile(name:'ldsc_table_cis.txt', skip: 1, keepHeader: true, storeDir: params.output)
     ldsc_trans_matrices_ch = ProcessTransLdscOutput(ldsc_trans_output_ch)
         .collectFile(name:'ldsc_table_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
+    ldsc_gw_matrices_ch = ProcessTransLdscOutput(ldsc_gw_output_ch)
+        .collectFile(name:'ldsc_table_gw.txt', skip: 1, keepHeader: true, storeDir: params.output)
 
     // Process LDSC stuff
     ProcessLdscDeleteVals(
