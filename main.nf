@@ -85,7 +85,7 @@ hapmap_ch = file(params.hapmap)
 
 ld_ch = Channel.fromPath(params.ld_w_dir, type: 'dir').collect()
 
-gene_chunk_size=100
+gene_chunk_size=1
 
 log.info """=================================================
 Estimate heritability v${workflow.manifest.version}"

@@ -256,7 +256,7 @@ def main(argv=None):
     if ldsc_processed_output.loc[trans].shape[0] > 0:
         ldsc_processed_output.loc[trans].to_csv("{}_trans.csv.gz".format(args.out_prefix), sep="\t", index=False)
     if ldsc_processed_output.shape[0] > 0:
-        ldsc_processed_output.loc[trans].to_csv("{}_gw.csv.gz".format(args.out_prefix), sep="\t", index=False)
+        ldsc_processed_output.to_csv("{}_gw.csv.gz".format(args.out_prefix), sep="\t", index=False)
 
     # Output
     return 0
