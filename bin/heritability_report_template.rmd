@@ -34,6 +34,8 @@ expected_column_names <- c("p1", "p2", "rg", "se", "z", "p", "h2_obs", "h2_obs_s
 input_path1 <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2023-10-05/ldsc_table.txt"
 input_path2 <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPCNoExpPC_2023-07-13/ldsc_table.txt"
 
+mr_genes <- fread("/gpfs/space/GI/eQTLGen/freeze2/eqtl_mapping/input/mr_GenesToInclude_2023-07-14.txt")
+sampled_genes <- fread("/gpfs/space/GI/eQTLGen/freeze2/eqtl_mapping/input/sampled1K_and_mr_GenesToInclude_2023-10-05.txt")
 ```
 
 ```{r, message = FALSE, warning = FALSE, echo = FALSE}
@@ -49,6 +51,38 @@ gamma_moments_of_methods <- function(h2_obs, h2_obs_se) {
 
 ```
 
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+input_path_cis <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2023-05-27/ldsc_table_cis.txt"
+input_path_trans <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2023-05-27/ldsc_table_trans.txt"
+
+h2_table_cis <- fread(input_path_cis) %>%
+  mutate(marker_gene = gene_id %in% mr_genes$ID)
+h2_table_trans <- fread(input_path_trans) %>%
+  mutate(marker_gene = gene_id %in% mr_genes$ID)
+
+
+h2_table_concat <- bind_rows(list("cis" = h2_table_cis, "trans" = h2_table_trans), .id = "annot")
+
+h2_table_concat %>% group_by(annot) %>% summarise(length(unique(gene_id)), mean(h2_obs), median(h2_obs)
+
+p <- ggplot(h2_table_concat, aes(h2_obs)) +
+  geom_histogram(aes(y = after_stat(density))) +
+  facet_wrap(vars(annot), scales="free")
+
+ggsave("distributions_h2_10-26_trans.pdf", p, width = 6, height = 6)
+
+
+h2_table_concat_sig <- h2_table_concat %>% inner_join(trans_signals, by = c("gene_id" = "Gene"))
+
+p <- ggplot(h2_table_concat_sig, aes(n, h2_obs)) +
+  geom_point() +
+  geom_linerange(aes(ymin=h2_obs-h2_obs_se, ymax=h2_obs+h2_obs_se)) +
+  geom_smooth() +
+  facet_wrap(vars(annot), scales="free")
+
+ggsave("distributions_h2_10-26_trans_sig.pdf", p, width = 6, height = 6)
+
+```
 
 ```{r, message = FALSE, warning = FALSE, echo = FALSE}
 
@@ -157,6 +191,4 @@ p <- ggplot(combiend %>% filter(annot == "trans", p1 != p2, meta_analysis == "20
 
 ggsave("covariances_violin_mr.pdf", p, width = 6, height = 6)
 
-
-dpeEZ8b7sZ2HfWS
 ```
