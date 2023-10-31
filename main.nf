@@ -75,8 +75,8 @@ cohorts_ch = Channel.fromPath(params.mastertable)
     .splitCsv(header: true, sep: '\t', strip: true)
     .map{row -> [ row.cohort_new_name ]}
 
-cohorts_ch = Channel
-    .fromList( ["GTEx_2017-06-05_v8_EUR"] )
+//cohorts_ch = Channel
+//   .fromList( ["GTEx_2017-06-05_v8_EUR"] )
 
 inclusion_step_output_ch = file(params.inclusion_step_output)
 one_kg_bed_ch = file(params.variants_bed)
