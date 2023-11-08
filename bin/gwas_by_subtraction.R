@@ -109,7 +109,7 @@ main <- function(argv = NULL) {
 
   # Process input
   print(argv)
-  #args <- parser$parse_args(argv)
+  args <- parser$parse_args(argv)
 
   traits <- args$rg
   sample.prev <- c(NA,NA)
