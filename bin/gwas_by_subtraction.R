@@ -31,7 +31,7 @@ subtract_ext <- function() {
 
   ge_dependency <- "GE~~1*GE"
 
-  latent_factors <- sprintf("%s=~NA*GE_CTC + start(0.4)*%s", latent_factor_names, trait_names)
+  latent_factors <- sprintf("RET~~1*RET\nRET~~0*GE", latent_factor_names)
 
   model_ext <-'RET=~NA*GE_CTC + start(0.4)*RET_G
           ERY=~NA*GE_CTC + start(0.4)*ERY_G

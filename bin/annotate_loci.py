@@ -247,7 +247,8 @@ def main(argv=None):
         np.logical_or((eqtls_annotated.bp_variant - eqtls_annotated.start).abs() < 5*10**6,
                       (eqtls_annotated.bp_variant - eqtls_annotated.end).abs() < 5*10**6))
 
-    ldsc_selector = {"variant": "SNP", "sample_size": "N", "z_score": "Z", "allele_eff": "A1", "allele_ref": "A2"}
+    ldsc_selector = {"variant": "SNP", "sample_size": "N", "z_score": "Z", "p_value": "P",
+                     "beta": "BETA", "standard_error": "SE", "allele_eff": "A1", "allele_ref": "A2"}
 
     ldsc_processed_output = eqtls_annotated.rename(columns=ldsc_selector)[[*ldsc_selector.values()]]
 

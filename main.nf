@@ -51,7 +51,7 @@ Mandatory arguments:
 }
 
 params.variants = 'NO_FILE'
-params.cols = '+z_score'
+params.cols = '+z_score,+p_value'
 params.output
 
 if (params.help){
@@ -82,7 +82,7 @@ inclusion_step_output_ch = file(params.inclusion_step_output)
 one_kg_bed_ch = file(params.variants_bed)
 variants_ch = file(params.variants)
 hapmap_ch = file(params.hapmap)
-onekg_gwas_by_subtraction_reference = file("data/reference.1000G.maf.0.005.txt.gz").collect()
+onekg_gwas_by_subtraction_reference = Channel.fromPath("data/reference.1000G.maf.0.005.txt.gz").collect()
 
 ld_ch = Channel.fromPath(params.ld_w_dir, type: 'dir').collect()
 
