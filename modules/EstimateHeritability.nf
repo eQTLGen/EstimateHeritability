@@ -56,7 +56,7 @@ process CountHeritabilitySnps {
         awk -F '\t' '{print $4}' | sort | uniq -c | sed 's/^ *//' > "cis_gen_annot_M_5_50.txt"
     bedtools intersect -a "genes.trans.bed" -b !{oneKgBedFiles} | \
             awk -F '\t' '{print $4}' | sort | uniq -c | sed 's/^ *//' | awk -v tot=$n_total '{print (tot - $1),$2}' > "trans_gen_annot_M_5_50.txt"
-    echo $n_total > "gw_gen_annot_M_5_50.txt"
+    awk -v tot=$n_total '{print (tot),$2}' "trans_gen_annot_M_5_50.txt" > "gw_gen_annot_M_5_50.txt"
     '''
 }
 
@@ -207,9 +207,33 @@ process EstimateHeritabilityGenomicSem {
     // Should first limit to the trans variants
     '''
     genomic_sem_ldsc.R \
-    --rg !{sumstats_a} !{gwas.join(" ")} \
+    --rg !{sumstats} !{gwas.join(" ")} \
     --ref-ld-chr !{ld_ch}/ \
     --w-ld-chr !{ld_ch}/ \
+    --names "!{gene}" "!{name.join("\" \"")}"
+    '''
+}
+
+process GwasBySubtraction {
+
+    input:
+      tuple val(gene), val(annot), path(sumstats)
+      val name
+      path gwas
+      path ld_ch
+      path onekg_gwas_by_subtraction_reference
+
+    output:
+      tuple val(gene), val(annot), path('*_rg.log')
+
+    shell:
+    // Should first limit to the trans variants
+    '''
+    gwas_by_subtraction.R \
+    --rg !{sumstats} !{gwas.join(" ")} \
+    --ref-ld-chr !{ld_ch}/ \
+    --w-ld-chr !{ld_ch}/ \
+    --ref !{onekg_gwas_by_subtraction_reference} \
     --names "!{gene}" "!{name.join("\" \"")}"
     '''
 }
