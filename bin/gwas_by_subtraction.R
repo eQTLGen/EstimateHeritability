@@ -128,6 +128,7 @@ main <- function(argv = NULL) {
 
   ref <- args$ref
   se.logit <- c(F,F)
+  betas <- c(NULL, NULL)
   info.filter <- 0.6
   maf.filter <- 0.01
 
@@ -138,8 +139,9 @@ main <- function(argv = NULL) {
                          info.filter,
                          maf.filter,
                          OLS=c(T,T),
+                         betas=betas,
                          linprob=NULL,
-                         prop=NULL)
+                         N = c(NULL, NULL))
 
   save(p_sumstats, file="Sumstats.RData")
 
