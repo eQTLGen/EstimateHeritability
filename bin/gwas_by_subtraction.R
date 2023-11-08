@@ -11,28 +11,26 @@ library(argparse)
 parser <- ArgumentParser(description='Calculate LDSC heritability using GenomicSEM')
 # Basic LD Score Estimation Flags'
 # Filtering / Data Management for LD Score
-parser$add_argument('--input', default=None, type=str,
-                    help='Sumstat to correct')
-parser$add_argument('--rg', default=None, type=str, nargs="+",
+parser$add_argument('--rg', default=NULL, type=str, nargs="+",
                     help='List of sumstat files for correction.')
-parser$add_argument('--ref-ld-chr', default=None, type=str,
-                    help=paste0(
+parser$add_argument('--ref-ld-chr', default=NULL, type=str,
+                    help=paste0(c(
                       'Same as --ref-ld, but will automatically concatenate .l2.ldscore files split ',
                       'across 22 chromosomes. LDSC will automatically append .l2.ldscore/.l2.ldscore.gz ',
                       'to the filename prefix. If the filename prefix contains the symbol @, LDSC will ',
                       'replace the @ symbol with chromosome numbers. Otherwise, LDSC will append chromosome ',
                       'numbers to the end of the filename prefix.',
                       'Example 1: --ref-ld-chr ld/ will read ld/1.l2.ldscore.gz ... ld/22.l2.ldscore.gz',
-                      'Example 2: --ref-ld-chr ld/@_kg will read ld/1_kg.l2.ldscore.gz ... ld/22_kg.l2.ldscore.gz'))
-parser$add_argument('--w-ld-chr', default=None, type=str,
-                    help=paste0(
+                      'Example 2: --ref-ld-chr ld/@_kg will read ld/1_kg.l2.ldscore.gz ... ld/22_kg.l2.ldscore.gz')))
+parser$add_argument('--w-ld-chr', default=NULL, type=str,
+                    help=paste0(c(
                       'Same as --w-ld, but will read files split into 22 chromosomes in the same ',
-                      'manner as --ref-ld-chr.'))
-parser$add_argument('--ref', default=None, type=str,
-                    help=paste0('1kg reference'))
-parser$add_argument('--names', default=None, type=str,
-                    help=paste0(
-                      'List of names for traits associated to the sumstat files.'))
+                      'manner as --ref-ld-chr.')))
+parser$add_argument('--ref', default=NULL, type=str,
+                    help='1kg reference')
+parser$add_argument('--names', default=NULL, type=str, nargs="+",
+                    help=paste0(c(
+                      'List of names for traits associated to the sumstat files.')))
 
 # Declare function definitions
 subtract_ext <- function() {
@@ -112,7 +110,8 @@ main <- function(argv = NULL) {
   }
 
   # Process input
-  args <- parser$parse_args(argv)
+  print(argv)
+  #args <- parser$parse_args(argv)
 
   traits <- args$rg
   sample.prev <- c(NA,NA)

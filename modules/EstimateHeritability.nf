@@ -234,7 +234,7 @@ process GwasBySubtraction {
     --ref-ld-chr !{ld_ch}/ \
     --w-ld-chr !{ld_ch}/ \
     --ref !{onekg_gwas_by_subtraction_reference} \
-    --names "!{gene}" "!{name.join("\" \"")}"
+    --names "!{gene}" !{name.collect { it.replaceAll("\\s", "_") }.join(' ')}
     '''
 }
 
