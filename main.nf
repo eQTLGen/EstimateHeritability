@@ -7,7 +7,7 @@
 nextflow.enable.dsl = 2
 
 // import modules
-include { EstimateTransHeritabilityLdsc; EstimateTransHeritabilityLdsc as EstimateGwHeritabilityLdsc; EstimateCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise; ProcessLdscDeleteVals } from './modules/EstimateHeritability'
+include { EstimateTransHeritabilityLdsc; EstimateTransHeritabilityLdsc as EstimateGwHeritabilityLdsc; EstimateCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; ProcessLdscOutput as ProcessGwLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise; ProcessLdscDeleteVals } from './modules/EstimateHeritability'
 include { WriteOutRes } from './modules/WriteOutRes'
 include { ExtractResults; ExtractResultsPerCohort; ProcessResults } from './modules/CollectResults.nf'
 include { ProcessVuckovicGwasData } from './modules/ProcessGwas.nf'
@@ -82,6 +82,7 @@ inclusion_step_output_ch = file(params.inclusion_step_output)
 one_kg_bed_ch = file(params.variants_bed)
 variants_ch = file(params.variants)
 hapmap_ch = file(params.hapmap)
+onekg_gwas_by_subtraction_reference = file("data/reference.1000G.maf.0.005.txt.gz").collect()
 
 ld_ch = Channel.fromPath(params.ld_w_dir, type: 'dir').collect()
 
@@ -170,12 +171,19 @@ workflow {
         process_gwas_ch.map { name, gws, file -> name }.collect(),
         process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
 
+    GwasBySubtraction(
+        ldsc_gw_in_ch,
+        process_gwas_ch.map { name, gws, file -> name }.collect(),
+        process_gwas_ch.map { name, gws, file -> file }.collect(),
+        ld_ch,
+        onekg_gwas_by_subtraction_reference)
+
     // Process LDSC logs
     ldsc_cis_matrices_ch = ProcessCisLdscOutput(ldsc_cis_output_ch)
         .collectFile(name:'ldsc_table_cis.txt', skip: 1, keepHeader: true, storeDir: params.output)
     ldsc_trans_matrices_ch = ProcessTransLdscOutput(ldsc_trans_output_ch)
         .collectFile(name:'ldsc_table_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
-    ldsc_gw_matrices_ch = ProcessTransLdscOutput(ldsc_gw_output_ch)
+    ldsc_gw_matrices_ch = ProcessGwLdscOutput(ldsc_gw_output_ch)
         .collectFile(name:'ldsc_table_gw.txt', skip: 1, keepHeader: true, storeDir: params.output)
 
     // Process LDSC stuff

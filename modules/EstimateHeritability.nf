@@ -207,9 +207,33 @@ process EstimateHeritabilityGenomicSem {
     // Should first limit to the trans variants
     '''
     genomic_sem_ldsc.R \
-    --rg !{sumstats_a} !{gwas.join(" ")} \
+    --rg !{sumstats} !{gwas.join(" ")} \
     --ref-ld-chr !{ld_ch}/ \
     --w-ld-chr !{ld_ch}/ \
+    --names "!{gene}" "!{name.join("\" \"")}"
+    '''
+}
+
+process GwasBySubtraction {
+
+    input:
+      tuple val(gene), val(annot), path(sumstats)
+      val name
+      path gwas
+      path ld_ch
+      path onekg_gwas_by_subtraction_reference
+
+    output:
+      tuple val(gene), val(annot), path('*_rg.log')
+
+    shell:
+    // Should first limit to the trans variants
+    '''
+    gwas_by_subtraction.R \
+    --rg !{sumstats} !{gwas.join(" ")} \
+    --ref-ld-chr !{ld_ch}/ \
+    --w-ld-chr !{ld_ch}/ \
+    --ref !{onekg_gwas_by_subtraction_reference} \
     --names "!{gene}" "!{name.join("\" \"")}"
     '''
 }
