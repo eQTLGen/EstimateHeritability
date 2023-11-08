@@ -7,7 +7,7 @@
 nextflow.enable.dsl = 2
 
 // import modules
-include { EstimateTransHeritabilityLdsc; EstimateTransHeritabilityLdsc as EstimateGwHeritabilityLdsc; EstimateCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; ProcessLdscOutput as ProcessGwLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise; ProcessLdscDeleteVals } from './modules/EstimateHeritability'
+include { GwasBySubtraction; EstimateTransHeritabilityLdsc; EstimateTransHeritabilityLdsc as EstimateGwHeritabilityLdsc; EstimateCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; ProcessLdscOutput as ProcessGwLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise; ProcessLdscDeleteVals } from './modules/EstimateHeritability'
 include { WriteOutRes } from './modules/WriteOutRes'
 include { ExtractResults; ExtractResultsPerCohort; ProcessResults } from './modules/CollectResults.nf'
 include { ProcessVuckovicGwasData } from './modules/ProcessGwas.nf'
