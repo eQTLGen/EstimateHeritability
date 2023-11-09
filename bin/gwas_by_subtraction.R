@@ -12,6 +12,8 @@ parser <- ArgumentParser(description='Calculate LDSC heritability using GenomicS
 # Basic LD Score Estimation Flags'
 # Filtering / Data Management for LD Score
 parser$add_argument('--rg', default=NULL, type="character", nargs="+",
+                    help='List of munged sumstat files for LDSC calculations.')
+parser$add_argument('--sumstats', default=NULL, type="character", nargs="+",
                     help='List of sumstat files for correction.')
 parser$add_argument('--ref-ld-chr', default=NULL, type="character")
 parser$add_argument('--w-ld-chr', default=NULL, type="character")
@@ -112,6 +114,7 @@ main <- function(argv = NULL) {
   args <- parser$parse_args(argv)
 
   traits <- args$rg
+  sumstats <- args$sumstats
   sample.prev <- c(NA,NA)
   population.prev <- c(NA,NA)
   ld <- args$ref_ld_chr
@@ -132,7 +135,7 @@ main <- function(argv = NULL) {
   info.filter <- 0.6
   maf.filter <- 0.01
 
-  p_sumstats <- sumstats(traits,
+  p_sumstats <- sumstats(sumstats,
                          ref,
                          trait.names,
                          se.logit,

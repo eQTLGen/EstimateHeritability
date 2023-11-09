@@ -173,6 +173,7 @@ workflow {
 
     GwasBySubtraction(
         ldsc_gw_in_ch,
+        gwas_input_ch.map { name, gws, n -> gws }.collect()
         process_gwas_ch.map { name, gws, file -> name }.collect(),
         process_gwas_ch.map { name, gws, file -> file }.collect(),
         ld_ch,

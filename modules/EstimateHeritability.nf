@@ -218,8 +218,9 @@ process GwasBySubtraction {
 
     input:
       tuple val(gene), val(annot), path(sumstats)
+      path sumstats
       val name
-      path gwas
+      path munge
       path ld_ch
       path onekg_gwas_by_subtraction_reference
 
@@ -230,7 +231,8 @@ process GwasBySubtraction {
     // Should first limit to the trans variants
     '''
     gwas_by_subtraction.R \
-    --rg !{sumstats} !{gwas.join(" ")} \
+    --rg !{sumstats} !{munge.join(" ")} \
+    --sumstats !{sumstats} !{sumstats.join(" ")} \
     --ref-ld-chr !{ld_ch}/ \
     --w-ld-chr !{ld_ch}/ \
     --ref !{onekg_gwas_by_subtraction_reference} \
