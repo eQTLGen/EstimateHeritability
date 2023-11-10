@@ -216,16 +216,34 @@ def main(argv=None):
 
     print(eqtls.head())
 
+    i_squared_threshold = 40
     sample_size_threshold = total_sample_size * 0.5
     pass_sample_size_threshold = (eqtls.sample_size > sample_size_threshold)
+    pass_i_squared_threshold = eqtls.i_squared < i_squared_threshold
+
+    passed_variants = np.logical_and(pass_sample_size_threshold, pass_i_squared_threshold)
 
     print("Total theoretical sample size = {}".format(total_sample_size))
     print("Sample size threshold = {}".format(sample_size_threshold))
-    print("Frequency of passed samples:")
-    print(np.unique(pass_sample_size_threshold, return_counts = True))
+    print("Frequency of passed variants:")
+    print(np.unique(pass_sample_size_threshold, return_counts=True))
 
-    eqtls_filtered = eqtls.loc[pass_sample_size_threshold]
+    print("I2 threshold = {}".format(i_squared_threshold))
+    print("Frequency of passed variants:")
+    print(np.unique(pass_i_squared_threshold, return_counts=True))
+
+    print("Filtering variants")
+    print("Frequency of passed variants:")
+    print(np.unique(passed_variants, return_counts=True))
+
+    eqtls_filtered = eqtls.loc[passed_variants]
     # For each gene, check what the number of variants are. If it is lower than
+
+    if eqtls_filtered.shape[0] < 0.5 * eqtls.shape[0]:
+        print("The number of filtered variants is under 50% of the number of input variants ({} vs {}, {}%)"
+              .format(eqtls_filtered.shape[0], eqtls.shape[0], eqtls_filtered.shape[0]/eqtls.shape[0]))
+        print("exiting...")
+        return 0
 
     # Perform method
     eqtls_annotated = (
