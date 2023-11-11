@@ -7,7 +7,7 @@
 nextflow.enable.dsl = 2
 
 // import modules
-include { GwasBySubtraction; EstimateTransHeritabilityLdsc; EstimateTransHeritabilityLdsc as EstimateGwHeritabilityLdsc; EstimateCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; ProcessLdscOutput as ProcessGwLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise; ProcessLdscDeleteVals } from './modules/EstimateHeritability'
+include { GwasBySubtraction; EstimateTransHeritabilityLdsc; EstimateTransHeritabilityLdsc as EstimateGwHeritabilityLdsc; EstimateCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; ProcessLdscOutput as ProcessGwLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise; ProcessLdscDeleteVals; ProcessLdscDeleteVals as ProcessLdscDeleteValsGw } from './modules/EstimateHeritability'
 include { WriteOutRes } from './modules/WriteOutRes'
 include { ExtractResults; ExtractResultsPerCohort; ProcessResults } from './modules/CollectResults.nf'
 include { ProcessVuckovicGwasData } from './modules/ProcessGwas.nf'
@@ -191,7 +191,12 @@ workflow {
     ProcessLdscDeleteVals(
         ldsc_trans_output_ch.map { name, gws, file, del -> name }.collect(),
         ldsc_trans_output_ch.map { name, gws, file, del -> del }.collect(),
-        ldsc_trans_matrices_ch)
+        ldsc_trans_matrices_ch, "trans")
+
+    ProcessLdscDeleteValsGw(
+        ldsc_gw_output_ch.map { name, gws, file, del -> name }.collect(),
+        ldsc_gw_output_ch.map { name, gws, file, del -> del }.collect(),
+        ldsc_gw_matrices_ch, "gw")
 
     // WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
 }

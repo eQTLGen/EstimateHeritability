@@ -258,15 +258,16 @@ process ProcessLdscOutput {
 
 
 process ProcessLdscDeleteVals {
-    publishDir "${params.output}", mode: 'copy', pattern: '*_h2.txt'
+    publishDir "${params.output}", mode: 'copy', pattern: 'delete_values_combined*.tsv'
 
     input:
       val gene
       path ldsc_delete_vals
       path ldsc_matrix
+      val annot
 
     output:
-      path 'delete_values_combined.tsv'
+      path 'delete_values_combined_${annot}.tsv'
 
     shell:
     // Should first limit to the trans variants
