@@ -60,13 +60,12 @@ h2_table_cis <- fread(input_path_cis) %>%
   mutate(marker_gene = gene_id %in% mr_genes$ID)
 h2_table_trans <- fread(input_path_trans) %>%
   mutate(marker_gene = gene_id %in% mr_genes$ID)
-h2_gw_trans <- fread(input_path_gw) %>%
+h2_table_gw <- fread(input_path_gw) %>%
   mutate(marker_gene = gene_id %in% mr_genes$ID)
-
 
 h2_table_concat <- bind_rows(list("cis" = h2_table_cis, "trans" = h2_table_trans, "gw" = h2_gw_trans), .id = "annot")
 
-h2_table_concat %>% group_by(annot) %>% summarise(length(unique(gene_id)), mean(h2_obs), median(h2_obs))
+h2_table_concat %>% group_by(annot, marker_gene) %>% summarise(length(unique(gene_id)), mean(h2_obs), median(h2_obs))
 
 p <- ggplot(h2_table_concat, aes(h2_obs)) +
   geom_histogram(aes(y = after_stat(density))) +

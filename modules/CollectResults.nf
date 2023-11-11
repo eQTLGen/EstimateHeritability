@@ -87,6 +87,7 @@ process ProcessResults {
         path geneReference
         path inclusionDir
         val cohorts
+        val isqThreshold
 
     output:
         tuple val(locus_string), val("cis"), path("annotated.${locus_string}_cis.csv.gz"), emit: cis, optional: true
@@ -104,6 +105,7 @@ process ProcessResults {
             --inclusion-path ${inclusionDir} \
             --variant-reference ${variantReference} \
             --gene-ref ${geneReference} \
-            --out-prefix annotated.${locus_string}
+            --out-prefix annotated.${locus_string} \
+            --i2-threshold ${isqThreshold}
         """
 }
