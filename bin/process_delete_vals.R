@@ -36,12 +36,17 @@ main <- function(argv = NULL) {
     fread(path, header=F)$V1
   }))
 
+  ensemble_ids <- str_extract(args$delete_vals, "ENSG\\d+")
+  colnames(delete_values) <- ensemble_ids
+
+  write.table(delete_values, "delete_values_combined.tsv", quote=F, sep="\t", row.names=F, col.names=T)
+
   mean_delete_values <- apply(delete_values, 1, mean)
 
   pseudovalues <- 200 * mean_hsq - 199 * mean_delete_values
 
   se <- sqrt(var(pseudovalues))
-  print(mean_hsq, se)
+  print(se)
 }
 
 if (sys.nframe() == 0 && !interactive()) {

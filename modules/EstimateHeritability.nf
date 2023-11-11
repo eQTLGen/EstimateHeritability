@@ -266,7 +266,7 @@ process ProcessLdscDeleteVals {
       path ldsc_matrix
 
     output:
-      path '*_h2.txt'
+      path 'delete_values_combined.tsv'
 
     shell:
     // Should first limit to the trans variants
