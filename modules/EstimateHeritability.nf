@@ -258,7 +258,7 @@ process ProcessLdscOutput {
 
 
 process ProcessLdscDeleteVals {
-    publishDir "${params.output}", mode: 'copy', pattern: 'delete_values_combined*.tsv'
+    publishDir "${params.output}", mode: 'copy', pattern: 'delete_values_combined_*.tsv'
 
     input:
       val gene
@@ -267,7 +267,7 @@ process ProcessLdscDeleteVals {
       val annot
 
     output:
-      path 'delete_values_combined_${annot}.tsv'
+      path 'delete_values_combined_*.tsv'
 
     shell:
     // Should first limit to the trans variants
