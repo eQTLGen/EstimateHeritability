@@ -187,6 +187,8 @@ def main(argv=None):
                             help='Names of cohorts used in the meta-analysis')
     parser.add_argument('--inclusion-path', dest='inclusion_path', required=True,
                         help='Inclusion_path')
+    parser.add_argument('--i2-threshold', dest='i_squared_threshold', required=False,
+                        default=40)
 
     args = parser.parse_args(argv[1:])
     print(args)
@@ -216,7 +218,7 @@ def main(argv=None):
 
     print(eqtls.head())
 
-    i_squared_threshold = 40
+    i_squared_threshold = args.i_squared_threshold
     sample_size_threshold = total_sample_size * 0.5
     pass_sample_size_threshold = (eqtls.sample_size > sample_size_threshold)
     pass_i_squared_threshold = eqtls.i_squared < i_squared_threshold
