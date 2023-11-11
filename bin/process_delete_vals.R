@@ -24,9 +24,9 @@ main <- function(argv = NULL) {
   parser <- ArgumentParser(description='process delete values')
   # Basic LD Score Estimation Flags'
   # Filtering / Data Management for LD Score
-  parser$add_argument('--h2', type=str,
+  parser$add_argument('--h2', type="character",
                       help='matrix')
-  parser$add_argument('--delete-vals', default=None, type=str, nargs="+")
+  parser$add_argument('--delete-vals', default=NULL, type="character", nargs="+")
 
   args <- parser$parse_args(argv)
 
