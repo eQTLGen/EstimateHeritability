@@ -272,6 +272,6 @@ process ProcessLdscDeleteVals {
     shell:
     // Should first limit to the trans variants
     '''
-    process_delete_vals.R --delete-vals !{ldsc_delete_vals.join(' ')} --h2 !{ldsc_matrix}
+    process_delete_vals.R --delete-vals !{ldsc_delete_vals.join(' ')} --h2 !{ldsc_matrix} --out 'delete_values_combined_!{annot}.tsv'
     '''
 }

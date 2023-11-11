@@ -26,6 +26,10 @@ main <- function(argv = NULL) {
   # Filtering / Data Management for LD Score
   parser$add_argument('--h2', type="character",
                       help='matrix')
+  parser$add_argument('--out', type="character",
+                      help='output')
+  parser$add_argument('--genes', type="character",
+                      nargs="+")
   parser$add_argument('--delete-vals', default=NULL, type="character", nargs="+")
 
   args <- parser$parse_args(argv)
@@ -36,10 +40,10 @@ main <- function(argv = NULL) {
     fread(path, header=F)$V1
   }))
 
-  ensemble_ids <- str_extract(args$delete_vals, "ENSG\\d+")
-  colnames(delete_values) <- ensemble_ids
+  #ensemble_ids <- str_extract(args$delete_vals, "ENSG\\d+")
+  colnames(delete_values) <- args$genes
 
-  write.table(delete_values, "delete_values_combined.tsv", quote=F, sep="\t", row.names=F, col.names=T)
+  write.table(delete_values, args$out, quote=F, sep="\t", row.names=F, col.names=T)
 
   mean_delete_values <- apply(delete_values, 1, mean)
 
