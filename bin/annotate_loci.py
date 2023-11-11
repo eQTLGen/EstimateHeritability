@@ -187,7 +187,7 @@ def main(argv=None):
                             help='Names of cohorts used in the meta-analysis')
     parser.add_argument('--inclusion-path', dest='inclusion_path', required=True,
                         help='Inclusion_path')
-    parser.add_argument('--i2-threshold', dest='i_squared_threshold', required=False,
+    parser.add_argument('--i2-threshold', dest='i_squared_threshold', type=float, required=False,
                         default=40)
 
     args = parser.parse_args(argv[1:])
