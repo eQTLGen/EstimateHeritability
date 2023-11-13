@@ -239,6 +239,21 @@ def main(argv=None):
     print(np.unique(passed_variants, return_counts=True))
 
     eqtls_filtered = eqtls.loc[passed_variants]
+
+    n_passed_variants = [
+        np.sum(pass_i_squared_threshold),
+        np.sum(pass_sample_size_threshold),
+        np.sum(passed_variants)]
+    n_failed_variants = [
+        np.sum(~pass_i_squared_threshold),
+        np.sum(~pass_sample_size_threshold),
+        np.sum(~passed_variants)]
+
+    (pd.DataFrame({"n_passed_variants": n_passed_variants,
+                  "n_failed_variants": n_failed_variants},
+                 index = np.array(["i_squared", "sample_size", "overall"]))
+        .to_csv("{}_passed_variants.csv.gz".format(args.out_prefix), sep="\t", index=True))
+
     # For each gene, check what the number of variants are. If it is lower than
 
     if eqtls_filtered.shape[0] < 0.5 * eqtls.shape[0]:

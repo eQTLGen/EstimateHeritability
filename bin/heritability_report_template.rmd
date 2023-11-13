@@ -14,6 +14,7 @@ The code chunk appears:
 library(data.table)
 library(tidyverse)
 library(extrafont)
+library(bootstrap)
 
 # Declare constants
 loadfonts()
@@ -30,23 +31,33 @@ theme_update(
 
 expected_column_names <- c("p1", "p2", "rg", "se", "z", "p", "h2_obs", "h2_obs_se", "h2_int", "h2_int_se", "gcov_int", "gcov_int_se", "gene", "annot")
 
-#input_path <- params.input
-input_path1 <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2023-10-05/ldsc_table.txt"
-input_path2 <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPCNoExpPC_2023-07-13/ldsc_table.txt"
-
 mr_genes <- fread("/gpfs/space/GI/eQTLGen/freeze2/eqtl_mapping/input/mr_GenesToInclude_2023-07-14.txt")
 sampled_genes <- fread("/gpfs/space/GI/eQTLGen/freeze2/eqtl_mapping/input/sampled1K_and_mr_GenesToInclude_2023-10-05.txt")
 ```
 
 ```{r, message = FALSE, warning = FALSE, echo = FALSE}
 gamma_moments_of_methods <- function(h2_obs, h2_obs_se) {
-    median_squared_se <- median(h2_obs_se)^2
-    k_theta <- mean(h2_obs)
-    k_theta2 <- var(h2_obs_se) - median_squared_se
+  median_squared_se <- median(h2_obs_se)^2
+  print(median_squared_se)
+  k_theta <- mean(h2_obs)
+  print(k_theta)
+  k_theta2 <- var(h2_obs_se) - median_squared_se
+  print(k_theta2)
 
-    theta <- k_theta / k_theta2
-    k <- k_theta / theta
-    return(list("theta" = theta, "k" = k))
+  theta <- k_theta / k_theta2
+  print(theta)
+  k <- k_theta / theta
+  print(k)
+  return(list("theta" = theta, "k" = k))
+}
+
+standard_errors_gw <- function(delete_values, mean_hsq) {
+  mean_delete_values <- apply(delete_values, 1, mean)
+
+  pseudovalues <- 200 * mean_hsq - 199 * mean_delete_values
+
+  se <- sqrt(var(pseudovalues) / 200)
+  return(se)
 }
 
 ```
@@ -56,6 +67,9 @@ input_path_cis <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/ou
 input_path_trans <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2023-10-05/ldsc_table_trans.txt"
 input_path_gw <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2023-10-05/ldsc_table_gw.txt"
 
+input_path_dt_trans <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2023-10-05/delete_values_combined_trans.tsv"
+input_path_dt_gw <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2023-10-05/delete_values_combined_gw.tsv"
+
 h2_table_cis <- fread(input_path_cis) %>%
   mutate(marker_gene = gene_id %in% mr_genes$ID)
 h2_table_trans <- fread(input_path_trans) %>%
@@ -63,15 +77,44 @@ h2_table_trans <- fread(input_path_trans) %>%
 h2_table_gw <- fread(input_path_gw) %>%
   mutate(marker_gene = gene_id %in% mr_genes$ID)
 
-h2_table_concat <- bind_rows(list("cis" = h2_table_cis, "trans" = h2_table_trans, "gw" = h2_gw_trans), .id = "annot")
 
-h2_table_concat %>% group_by(annot, marker_gene) %>% summarise(length(unique(gene_id)), mean(h2_obs), median(h2_obs))
+delete_values_trans <- fread(input_path_dt_trans, data.table = F)
+delete_values_gw <- fread(input_path_dt_gw, data.table = F)
 
-p <- ggplot(h2_table_concat, aes(h2_obs)) +
+h2_table_concat <- bind_rows(list("cis" = h2_table_cis, "trans" = h2_table_trans, "gw" = h2_table_gw), .id = "annot") %>%
+  mutate(h2_z = h2_obs / h2_obs_se, h2_p = pnorm(q=h2_z, lower.tail=FALSE))
+
+h2_dist <- h2_table_concat %>% filter(!marker_gene) %>% group_by(annot) %>%
+  summarise(gamma = list(gamma_moments_of_methods(h2_obs, h2_obs_se))) %>%
+  cross_join(tibble(h2_obs = seq(-0.001, 1, by=0.001))) %>%
+  group_by(annot) %>%
+  mutate(density = dgamma(h2_obs, scale=gamma[[1]]$theta, shape=gamma[[1]]$k))
+
+h2_table_summary <- h2_table_concat %>% group_by(annot, marker_gene) %>%
+  summarise(
+      n_genes = length(unique(gene_id)),
+      mean_h2 = mean(h2_obs),
+      median_h2 = median(h2_obs),
+      over_not = sum(h2_p < 0.05),
+      h2_se = first(case_when(
+          annot == "cis" ~ jackknife(h2_obs, mean)$jack.se,
+          annot == "trans" ~ standard_errors_gw(delete_values_trans[,c(gene_id)], mean(h2_obs)),
+          annot == "gw" ~ standard_errors_gw(delete_values_gw[,c(gene_id)], mean(h2_obs)))))
+
+p <- ggplot(h2_table_concat %>% filter(!marker_gene), aes(h2_obs)) +
   geom_histogram(aes(y = after_stat(density))) +
-  facet_wrap(vars(annot), scales="free")
+  geom_line(data = h2_dist, aes(x=h2_obs, y=density), color = "#D55E00") +
+  facet_wrap(vars(annot), scales="free_y", ncol = 2) +
+  coord_cartesian(ylim = c(0, 10), xlim = c(NA, 1))
 
-ggsave("distributions_h2_10-31_trans.pdf", p, width = 6, height = 6)
+ggsave("distributions_h2_11-13_trans.pdf", p, width = 4, height = 4)
+
+h2_table_pivot <- h2_table_concat %>% filter(!marker_gene) %>% select(gene_id, h2_obs, h2_obs_se, h2_z, h2_p, annot) %>% pivot_wider(values_from = c("h2_obs", "h2_obs_se", "h2_z", "h2_p"), names_from = "annot")
+
+p <- ggplot(h2_table_pivot, aes(h2_z_cis, h2_z_trans)) +
+  geom_point() + geom_smooth(method="lm")
+
+ggsave("scatter_h2_11-13_trans.pdf", p, width = 4, height = 4)
 
 
 h2_table_concat_sig <- h2_table_concat %>% inner_join(trans_signals, by = c("gene_id" = "Gene"))

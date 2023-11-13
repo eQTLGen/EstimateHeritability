@@ -140,6 +140,11 @@ workflow {
     // Split summary statistics in cis and trans regions
     results_ch = ProcessResults(loci_extracted_ch, variant_reference_ch, gene_reference_ch, inclusion_step_output_ch, cohorts_ch.collect(), i_squared_threshold)
 
+    // List number of variants per gene
+    results_ch.variants.map {
+        name, file -> file.splitCsv(header:true, sep:'\t')
+        .map {row -> [row, name]}}.collectFile(keepHeader: true, skip: true, name: "variants_per_gene.txt", storeDir: params.output)
+
     // Count the number of heritability variants for each gene
     heritability_snps_file_ch = CountHeritabilitySnps(gene_reference_ch, one_kg_bed_ch)
 
