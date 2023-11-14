@@ -243,16 +243,16 @@ def main(argv=None):
     n_passed_variants = [
         np.sum(pass_i_squared_threshold),
         np.sum(pass_sample_size_threshold),
-        np.sum(passed_variants)]
+        np.sum(passed_variants), eqtls.phenotype[0]]
     n_failed_variants = [
         np.sum(~pass_i_squared_threshold),
         np.sum(~pass_sample_size_threshold),
-        np.sum(~passed_variants)]
+        np.sum(~passed_variants), eqtls.phenotype[0]]
 
     (pd.DataFrame({"n_passed_variants": n_passed_variants,
                   "n_failed_variants": n_failed_variants},
-                 index = np.array(["i_squared", "sample_size", "overall"]))
-        .to_csv("{}_passed_variants.csv.gz".format(args.out_prefix), sep="\t", index=True))
+                 index = np.array(["i_squared", "sample_size", "overall", "gene"]))
+        .to_csv("{}_passed_variants.csv.gz".format(args.out_prefix), sep="\t", index=True, index_label="class"))
 
     # For each gene, check what the number of variants are. If it is lower than
 

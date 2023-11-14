@@ -82,7 +82,7 @@ inclusion_step_output_ch = file(params.inclusion_step_output)
 one_kg_bed_ch = file(params.variants_bed)
 variants_ch = file(params.variants)
 hapmap_ch = file(params.hapmap)
-i_squared_threshold = 100
+i_squared_threshold = 40
 onekg_gwas_by_subtraction_reference = Channel.fromPath("data/reference.1000G.maf.0.005.txt.gz").collect()
 
 ld_ch = Channel.fromPath(params.ld_w_dir, type: 'dir').collect()
@@ -141,9 +141,8 @@ workflow {
     results_ch = ProcessResults(loci_extracted_ch, variant_reference_ch, gene_reference_ch, inclusion_step_output_ch, cohorts_ch.collect(), i_squared_threshold)
 
     // List number of variants per gene
-    results_ch.variants.map {
-        name, file -> file.splitCsv(header:true, sep:'\t')
-        .map {row -> [row, name]}}.collectFile(keepHeader: true, skip: true, name: "variants_per_gene.txt", storeDir: params.output)
+    results_ch.variants
+        .collectFile(keepHeader: true, skip: 1, name: "variants_per_gene.txt", storeDir: params.output)
 
     // Count the number of heritability variants for each gene
     heritability_snps_file_ch = CountHeritabilitySnps(gene_reference_ch, one_kg_bed_ch)
