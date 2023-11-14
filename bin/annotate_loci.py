@@ -252,7 +252,7 @@ def main(argv=None):
     (pd.DataFrame({"n_passed_variants": n_passed_variants,
                   "n_failed_variants": n_failed_variants},
                  index = np.array(["i_squared", "sample_size", "overall", "gene"]))
-        .to_csv("{}_passed_variants.csv.gz".format(args.out_prefix), sep="\t", index=True, index_label="class"))
+        .to_csv("{}_passed_variants.csv".format(args.out_prefix), sep="\t", index=True, index_label="class"))
 
     # For each gene, check what the number of variants are. If it is lower than
 
@@ -272,15 +272,18 @@ def main(argv=None):
     print(eqtls_annotated.head())
 
     # Identify genes that have a cis-effect
+    cis_window_flank_size = 1 * 10 ** 6
+    trans_window_flank_size = 5 * 10 ** 6
+
     cis = np.logical_and(
         eqtls_annotated.chromosome_variant == eqtls_annotated.chromosome_gene,
-        np.logical_or((eqtls_annotated.bp_variant - eqtls_annotated.start).abs() < 1*10**6,
-                      (eqtls_annotated.bp_variant - eqtls_annotated.end).abs() < 1*10**6))
+        np.logical_and(eqtls_annotated.start - cis_window_flank_size < eqtls_annotated.bp_variant,
+                       eqtls_annotated.end + cis_window_flank_size > eqtls_annotated.bp_variant))
 
     trans = ~np.logical_and(
         eqtls_annotated.chromosome_variant == eqtls_annotated.chromosome_gene,
-        np.logical_or((eqtls_annotated.bp_variant - eqtls_annotated.start).abs() < 5*10**6,
-                      (eqtls_annotated.bp_variant - eqtls_annotated.end).abs() < 5*10**6))
+        np.logical_and(eqtls_annotated.start - trans_window_flank_size < eqtls_annotated.bp_variant,
+                       eqtls_annotated.end + trans_window_flank_size > eqtls_annotated.bp_variant))
 
     ldsc_selector = {"variant": "SNP", "sample_size": "N", "z_score": "Z", "p_value": "P",
                      "beta": "BETA", "standard_error": "SE", "allele_eff": "A1", "allele_ref": "A2"}

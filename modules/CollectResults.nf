@@ -93,7 +93,7 @@ process ProcessResults {
         tuple val(locus_string), val("cis"), path("annotated.${locus_string}_cis.csv.gz"), emit: cis, optional: true
         tuple val(locus_string), val("trans"), path("annotated.${locus_string}_trans.csv.gz"), emit: trans, optional: true
         tuple val(locus_string), val("gw"), path("annotated.${locus_string}_gw.csv.gz"), emit: gw, optional: true
-        path "annotated.${locus_string}_passed_variants.csv.gz", emit: variants
+        path "annotated.${locus_string}_passed_variants.csv", emit: variants
 
     script:
         """

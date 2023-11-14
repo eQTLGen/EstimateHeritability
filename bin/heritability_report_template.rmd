@@ -62,6 +62,28 @@ standard_errors_gw <- function(delete_values, mean_hsq) {
 
 ```
 
+```{r}
+median_exp_summary <- "/gpfs/space/GI/eQTLGen/freeze2/PreMetaQc/output/ExpMedianZSummary_2023-11-13.txt.gz"
+exp <- fread(median_exp_summary) %>%
+  pivot_longer(cols = -gene, names_to = "cohort", values_to = "median_exp") %>%
+  group_by(gene) %>%
+  summarise(median_exp = median(median_exp, na.rm=T))
+
+gnomad_conservation <- fread("/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/data/gnomad.v4.0.constraint_metrics.tsv")
+
+library(biomaRt)
+mart <- useMart(biomart = "ensembl", dataset = "hsapiens_gene_ensembl")
+
+results <- getBM(attributes = c("ensembl_gene_id", "ensembl_transcript_id", "ensembl_peptide_id"),
+                 filters = "ensembl_transcript_id", values = gnomad_conservation$transcript,
+                 mart = mart)
+
+gene_annotations <- gnomad_conservation %>% inner_join(results, by=c("transcript"="ensembl_transcript_id")) %>%
+  inner_join(exp, by=c("ensembl_gene_id"="gene")) %>% distinct(ensembl_gene_id, .keep_all=TRUE)
+
+
+```
+
 ```{r, message = FALSE, warning = FALSE, echo = FALSE}
 input_path_cis <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2023-10-05/ldsc_table_cis.txt"
 input_path_trans <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2023-10-05/ldsc_table_trans.txt"
@@ -86,9 +108,10 @@ h2_table_concat <- bind_rows(list("cis" = h2_table_cis, "trans" = h2_table_trans
 
 h2_dist <- h2_table_concat %>% filter(!marker_gene) %>% group_by(annot) %>%
   summarise(gamma = list(gamma_moments_of_methods(h2_obs, h2_obs_se))) %>%
+  unnest_wider(gamma) %>%
   cross_join(tibble(h2_obs = seq(-0.001, 1, by=0.001))) %>%
   group_by(annot) %>%
-  mutate(density = dgamma(h2_obs, scale=gamma[[1]]$theta, shape=gamma[[1]]$k))
+  mutate(density = dgamma(h2_obs, scale=theta, shape=k))
 
 h2_table_summary <- h2_table_concat %>% group_by(annot, marker_gene) %>%
   summarise(
@@ -107,14 +130,30 @@ p <- ggplot(h2_table_concat %>% filter(!marker_gene), aes(h2_obs)) +
   facet_wrap(vars(annot), scales="free_y", ncol = 2) +
   coord_cartesian(ylim = c(0, 10), xlim = c(NA, 1))
 
-ggsave("distributions_h2_11-13_trans.pdf", p, width = 4, height = 4)
+ggsave("distributions_h2_11-14_trans.pdf", p, width = 4, height = 4)
 
-h2_table_pivot <- h2_table_concat %>% filter(!marker_gene) %>% select(gene_id, h2_obs, h2_obs_se, h2_z, h2_p, annot) %>% pivot_wider(values_from = c("h2_obs", "h2_obs_se", "h2_z", "h2_p"), names_from = "annot")
+h2_table_concat_annot <- h2_table_concat %>% inner_join(gene_annotations, by = c("gene_id"="ensembl_gene_id")) %>% filter(!marker_gene)
 
-p <- ggplot(h2_table_pivot, aes(h2_z_cis, h2_z_trans)) +
-  geom_point() + geom_smooth(method="lm")
+h2_table_pivot <- h2_table_concat_annot %>% filter(!marker_gene) %>% dplyr::select(gene_id, h2_obs, h2_obs_se, h2_z, h2_p, annot, lof.pLI, median_exp) %>% pivot_wider(values_from = c("h2_obs", "h2_obs_se", "h2_z", "h2_p"), names_from = "annot")
 
-ggsave("scatter_h2_11-13_trans.pdf", p, width = 4, height = 4)
+p <- ggplot(h2_table_pivot, aes(h2_z_cis, h2_z_trans, color = lof.pLI)) +
+  geom_point(shape=16) + geom_smooth(method="lm")
+
+ggsave("scatter_h2_11-14_trans.pdf", p, width = 4, height = 4)
+
+p <- ggplot(h2_table_concat_annot, aes(h2_obs, median_exp, color = lof.pLI)) +
+        geom_point(shape=16) +
+        facet_wrap(vars(annot), scales="free_y", ncol = 2)
+
+ggsave("exp_h2_11-14_trans.pdf", p, width = 4, height = 4)
+
+p <- ggplot(h2_table_concat_annot, aes(lof.pLI, h2_obs)) +
+        geom_point(shape=16) +
+        geom_smooth(method="lm") +
+        facet_wrap(vars(annot), scales="free_y", ncol = 2)
+
+ggsave("conservation_h2_11-14_trans.pdf", p, width = 4, height = 4)
+
 
 
 h2_table_concat_sig <- h2_table_concat %>% inner_join(trans_signals, by = c("gene_id" = "Gene"))
