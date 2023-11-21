@@ -73,6 +73,45 @@ subtract_ext <- function() {
 
 }
 
+
+subtract_ldsc_extended <- function(ldsc_output) {
+
+  latent_factors <- sprintf("%s=~NA*GE + start(0.4)*%s", latent_factor_names, trait_names)
+  ge_latent_factor <- "GeNonCtc=~NA*GE + start(0.2)*GE"
+
+  ge_non_ctc_dependency <- "GeNonCtc~~1*GeNonCtc"
+
+  latent_factor_dependencies <- sprintf("%s~~1*%1$s\\n%1$s~~0*GeNonCtc", latent_factor_names)
+  trait_dependencies <- sprintf("%s~~0*%1$s\n%1$s~~0*GE", trait_names)
+
+  ge_dependency <- "GE~~0*GE"
+
+  model <- paste(
+    latent_factors, ge_latent_factor, ge_non_ctc_dependency,
+    latent_factor_dependencies, trait_dependencies, ge_dependency, sep="\n")
+
+  output<-usermodel(ldsc_output,estimation="DWLS",model=model)
+  return(output)
+}
+
+
+subtract_ldsc <- function(ldsc_output) {
+
+  model<-'CTC=~NA*GE + start(0.4)*CC
+          GeNonCtc=~NA*GE
+
+          GeNonCtc~~1*GeNonCtc
+          CTC~~1*CTC
+          CTC~~0*GeNonCtc
+
+          CC ~~ 0*GE
+          CC~~0*CC
+          GE~~0*GE'
+
+  output<-usermodel(ldsc_output,estimation="DWLS",model=model)
+  return(output)
+}
+
 subtract_plt <- function(ldsc_output, p_sumstats) {
 
   # model with SNP
@@ -114,13 +153,13 @@ main <- function(argv = NULL) {
   args <- parser$parse_args(argv)
 
   traits <- args$rg
+  gene_reference_path <- args$gene_reference
   sumstats <- args$sumstats
   sample.prev <- c(NA,NA)
   population.prev <- c(NA,NA)
   ld <- args$ref_ld_chr
   wld <- args$ref_w_chr
   trait.names <- args$names
-  n <- args$n
 
   ldsc_output <- ldsc(traits,
                      sample.prev,
@@ -129,26 +168,28 @@ main <- function(argv = NULL) {
                      wld,
                      trait.names)
 
-  ref <- args$ref
-  se.logit <- c(F,F)
-  betas <- c(NULL, NULL)
-  info.filter <- 0.6
-  maf.filter <- 0.01
-
-  p_sumstats <- sumstats(sumstats,
-                         ref,
-                         trait.names,
-                         se.logit,
-                         info.filter,
-                         maf.filter,
-                         OLS=c(T,T),
-                         betas=betas,
-                         linprob=NULL,
-                         N = c(NULL, NULL))
-
-  save(p_sumstats, file="Sumstats.RData")
-
-  subtract_plt(ldsc_output, p_sumstats)
+  res <- subtract_ldsc(ldsc_output)
+  #
+  # ref <- args$ref
+  # se.logit <- c(F,F)
+  # betas <- c(NULL, NULL)
+  # info.filter <- 0.6
+  # maf.filter <- 0.01
+  #
+  # p_sumstats <- sumstats(sumstats,
+  #                        ref,
+  #                        trait.names,
+  #                        se.logit,
+  #                        info.filter,
+  #                        maf.filter,
+  #                        OLS=c(T,T),
+  #                        betas=betas,
+  #                        linprob=NULL,
+  #                        N = c(NULL, NULL))
+  #
+  # save(p_sumstats, file="Sumstats.RData")
+  #
+  # subtract_plt(ldsc_output, p_sumstats)
 
   # Process output
 }

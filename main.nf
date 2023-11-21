@@ -176,13 +176,13 @@ workflow {
         process_gwas_ch.map { name, gws, file -> name }.collect(),
         process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
 
-    //GwasBySubtraction(
-    //    ldsc_gw_in_ch,
-    //    gwas_input_ch.map { name, gws, n -> gws }.collect(),
-    //    process_gwas_ch.map { name, gws, file -> name }.collect(),
-    //    process_gwas_ch.map { name, gws, file -> file }.collect(),
-    //    ld_ch,
-    //    onekg_gwas_by_subtraction_reference)
+    GwasBySubtraction(
+        ldsc_gw_in_ch,
+        gwas_input_ch.map { name, gws, n -> gws }.collect(),
+        process_gwas_ch.map { name, gws, file -> name }.collect(),
+        process_gwas_ch.map { name, gws, file -> file }.collect(),
+        ld_ch,
+        onekg_gwas_by_subtraction_reference)
 
     // Process LDSC logs
     ldsc_cis_matrices_ch = ProcessCisLdscOutput(ldsc_cis_output_ch)

@@ -85,12 +85,12 @@ gene_annotations <- gnomad_conservation %>% inner_join(results, by=c("transcript
 ```
 
 ```{r, message = FALSE, warning = FALSE, echo = FALSE}
-input_path_cis <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2023-10-05/ldsc_table_cis.txt"
-input_path_trans <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2023-10-05/ldsc_table_trans.txt"
-input_path_gw <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2023-10-05/ldsc_table_gw.txt"
+input_path_cis <- "ldsc_table_cis.txt"
+input_path_trans <- "ldsc_table_trans.txt"
+input_path_gw <- "ldsc_table_gw.txt"
 
-input_path_dt_trans <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2023-10-05/delete_values_combined_trans.tsv"
-input_path_dt_gw <- "/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2023-10-05/delete_values_combined_gw.tsv"
+input_path_dt_trans <- "delete_values_combined_trans.tsv"
+input_path_dt_gw <- "delete_values_combined_gw.tsv"
 
 h2_table_cis <- fread(input_path_cis) %>%
   mutate(marker_gene = gene_id %in% mr_genes$ID)
@@ -132,20 +132,21 @@ p <- ggplot(h2_table_concat %>% filter(!marker_gene), aes(h2_obs)) +
 
 ggsave("distributions_h2_11-14_trans.pdf", p, width = 4, height = 4)
 
-h2_table_concat_annot <- h2_table_concat %>% inner_join(gene_annotations, by = c("gene_id"="ensembl_gene_id")) %>% filter(!marker_gene)
+h2_table_concat_annot <- h2_table_concat %>% inner_join(exp, by = c("gene_id"="gene")) %>% filter(!marker_gene)
 
-h2_table_pivot <- h2_table_concat_annot %>% filter(!marker_gene) %>% dplyr::select(gene_id, h2_obs, h2_obs_se, h2_z, h2_p, annot, lof.pLI, median_exp) %>% pivot_wider(values_from = c("h2_obs", "h2_obs_se", "h2_z", "h2_p"), names_from = "annot")
+h2_table_pivot <- h2_table_concat_annot %>% filter(!marker_gene) %>% dplyr::select(gene_id, h2_obs, h2_obs_se, h2_z, h2_p, annot, median_exp) %>% pivot_wider(values_from = c("h2_obs", "h2_obs_se", "h2_z", "h2_p"), names_from = "annot")
 
-p <- ggplot(h2_table_pivot, aes(h2_z_cis, h2_z_trans, color = lof.pLI)) +
+p <- ggplot(h2_table_pivot, aes(h2_z_cis, h2_z_trans, color = log10(median_exp))) +
   geom_point(shape=16) + geom_smooth(method="lm")
 
-ggsave("scatter_h2_11-14_trans.pdf", p, width = 4, height = 4)
+ggsave("scatter_h2_11-21_trans.pdf", p, width = 4, height = 4)
 
-p <- ggplot(h2_table_concat_annot, aes(h2_obs, median_exp, color = lof.pLI)) +
+p <- ggplot(h2_table_concat_annot, aes(log10(median_exp), h2_obs)) +
         geom_point(shape=16) +
+        geom_smooth(method="lm") +
         facet_wrap(vars(annot), scales="free_y", ncol = 2)
 
-ggsave("exp_h2_11-14_trans.pdf", p, width = 4, height = 4)
+ggsave("exp_h2_11-21_trans.pdf", p, width = 4, height = 4)
 
 p <- ggplot(h2_table_concat_annot, aes(lof.pLI, h2_obs)) +
         geom_point(shape=16) +

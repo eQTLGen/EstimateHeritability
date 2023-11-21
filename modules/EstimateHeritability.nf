@@ -226,7 +226,7 @@ process GwasBySubtraction {
 
     output:
       tuple val(gene), val(annot), path('*_rg.log')
-
+    
     shell:
     // Should first limit to the trans variants
     '''
