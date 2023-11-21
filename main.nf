@@ -82,7 +82,7 @@ inclusion_step_output_ch = file(params.inclusion_step_output)
 one_kg_bed_ch = file(params.variants_bed)
 variants_ch = file(params.variants)
 hapmap_ch = file(params.hapmap)
-i_squared_threshold = 40
+i_squared_threshold = 100
 onekg_gwas_by_subtraction_reference = Channel.fromPath("data/reference.1000G.maf.0.005.txt.gz").collect()
 
 ld_ch = Channel.fromPath(params.ld_w_dir, type: 'dir').collect()
