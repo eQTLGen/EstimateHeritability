@@ -74,7 +74,9 @@ subtract_ext <- function() {
 }
 
 
-subtract_ldsc_extended <- function(ldsc_output) {
+subtract_ldsc_extended <- function(ldsc_output, trait_names) {
+
+  latent_factor_names <- paste0("ctc_", trait_names)
 
   latent_factors <- sprintf("%s=~NA*GE + start(0.4)*%s", latent_factor_names, trait_names)
   ge_latent_factor <- "GeNonCtc=~NA*GE + start(0.2)*GE"
@@ -168,7 +170,9 @@ main <- function(argv = NULL) {
                      wld,
                      trait.names)
 
-  res <- subtract_ldsc(ldsc_output)
+  res <- subtract_ldsc_extended(ldsc_output, trait.names)
+
+  print(res)
   #
   # ref <- args$ref
   # se.logit <- c(F,F)
