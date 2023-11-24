@@ -181,7 +181,7 @@ main <- function(argv = NULL) {
                      population.prev,
                      ld,
                      wld,
-                     trait.names)
+                     trait_names)
 
   output <- subtract_ldsc_extended(ldsc_output)
 
