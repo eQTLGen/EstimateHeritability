@@ -182,7 +182,14 @@ workflow {
         process_gwas_ch.map { name, gws, file -> name }.collect(),
         process_gwas_ch.map { name, gws, file -> file }.collect(),
         ld_ch, onekg_gwas_by_subtraction_reference)
-        .collectFile(name:'latent_factors.txt', skip: 1, keepHeader: true, storeDir: params.output)
+        .collectFile(name:'latent_factors_cis.txt', skip: 1, keepHeader: true, storeDir: params.output)
+    GwasBySubtraction(
+        ldsc_trans_in_ch,
+        gwas_input_ch.map { name, gws, n -> gws }.collect(),
+        process_gwas_ch.map { name, gws, file -> name }.collect(),
+        process_gwas_ch.map { name, gws, file -> file }.collect(),
+        ld_ch, onekg_gwas_by_subtraction_reference)
+        .collectFile(name:'latent_factors_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
 
     // Process LDSC logs
     ldsc_cis_matrices_ch = ProcessCisLdscOutput(ldsc_cis_output_ch)
