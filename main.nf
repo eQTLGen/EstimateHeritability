@@ -7,7 +7,7 @@
 nextflow.enable.dsl = 2
 
 // import modules
-include { GwasBySubtraction; EstimateTransHeritabilityLdsc; EstimateTransHeritabilityLdsc as EstimateGwHeritabilityLdsc; EstimateCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; ProcessLdscOutput as ProcessGwLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise; ProcessLdscDeleteVals; ProcessLdscDeleteVals as ProcessLdscDeleteValsGw } from './modules/EstimateHeritability'
+include { GwasBySubtraction; GwasBySubtraction as GwasBySubtractionTrans; EstimateTransHeritabilityLdsc; EstimateTransHeritabilityLdsc as EstimateGwHeritabilityLdsc; EstimateCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; ProcessLdscOutput as ProcessGwLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise; ProcessLdscDeleteVals; ProcessLdscDeleteVals as ProcessLdscDeleteValsGw } from './modules/EstimateHeritability'
 include { WriteOutRes } from './modules/WriteOutRes'
 include { ExtractResults; ExtractResultsPerCohort; ProcessResults } from './modules/CollectResults.nf'
 include { ProcessVuckovicGwasData } from './modules/ProcessGwas.nf'
@@ -183,7 +183,7 @@ workflow {
         process_gwas_ch.map { name, gws, file -> file }.collect(),
         ld_ch, onekg_gwas_by_subtraction_reference)
         .collectFile(name:'latent_factors_cis.txt', skip: 1, keepHeader: true, storeDir: params.output)
-    GwasBySubtraction(
+    GwasBySubtractionTrans(
         ldsc_trans_in_ch,
         gwas_input_ch.map { name, gws, n -> gws }.collect(),
         process_gwas_ch.map { name, gws, file -> name }.collect(),
