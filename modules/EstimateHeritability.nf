@@ -225,7 +225,7 @@ process GwasBySubtraction {
       path onekg_gwas_by_subtraction_reference
 
     output:
-      tuple val(gene), val(annot), path('*_rg.log')
+      path('results_*.tsv')
     
     shell:
     // Should first limit to the trans variants

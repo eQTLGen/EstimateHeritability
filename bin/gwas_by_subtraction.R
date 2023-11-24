@@ -74,40 +74,51 @@ subtract_ext <- function() {
 }
 
 
-subtract_ldsc_extended <- function(ldsc_output, trait_names) {
+subtract_ldsc_extended <- function(ldsc_output) {
+
+  trait_names <- colnames(ldsc_output$S[,2:ncol(ldsc_output$S)])
 
   latent_factor_names <- paste0("ctc_", trait_names)
 
-  latent_factors <- sprintf("%s=~NA*GE + start(0.4)*%s", latent_factor_names, trait_names)
+  latent_factors <- paste0(sprintf("%s=~NA*GE + start(0.4)*%s", latent_factor_names, trait_names), collapse="\n")
   ge_latent_factor <- "GeNonCtc=~NA*GE + start(0.2)*GE"
 
   ge_non_ctc_dependency <- "GeNonCtc~~1*GeNonCtc"
 
-  latent_factor_dependencies <- sprintf("%s~~1*%1$s\\n%1$s~~0*GeNonCtc", latent_factor_names)
-  trait_dependencies <- sprintf("%s~~0*%1$s\n%1$s~~0*GE", trait_names)
+  latent_factor_dependencies <- paste0(sprintf("%s~~1*%1$s\n%1$s~~0*GeNonCtc", latent_factor_names), collapse="\n")
+  trait_dependencies <- paste0(sprintf("%s~~0*%1$s\n%1$s~~0*GE", trait_names), collapse="\n")
 
   ge_dependency <- "GE~~0*GE"
 
   model <- paste(
     latent_factors, ge_latent_factor, ge_non_ctc_dependency,
-    latent_factor_dependencies, trait_dependencies, ge_dependency, sep="\n")
+    latent_factor_dependencies, trait_dependencies, ge_dependency, collapse="\n", sep="\n")
 
   output<-usermodel(ldsc_output,estimation="DWLS",model=model)
   return(output)
 }
 
 
+subtract_ldsc_manual <- function(mat) {
+  lambda1 <- sqrt(mat[1, 1])
+  lambda2 <- mat[1, 2]/lambda1
+  lambda3 <- sqrt(mat[1, 1] - (lambda2^2))
+  print(paste0("lambda1: ", lambda1))
+  print(paste0("lambda2: ", lambda2))
+  print(paste0("lambda3: ", lambda3))
+}
+
 subtract_ldsc <- function(ldsc_output) {
 
-  model<-'CTC=~NA*GE + start(0.4)*CC
+  model<-'CTC=~NA*GE + Neutrophil_count
           GeNonCtc=~NA*GE
 
           GeNonCtc~~1*GeNonCtc
           CTC~~1*CTC
           CTC~~0*GeNonCtc
 
-          CC ~~ 0*GE
-          CC~~0*CC
+          Neutrophil_count ~~ 0*GE
+          Neutrophil_count~~0*Neutrophil_count
           GE~~0*GE'
 
   output<-usermodel(ldsc_output,estimation="DWLS",model=model)
@@ -161,7 +172,9 @@ main <- function(argv = NULL) {
   population.prev <- c(NA,NA)
   ld <- args$ref_ld_chr
   wld <- args$ref_w_chr
-  trait.names <- args$names
+  trait_names <- args$names
+  gene_id <- trait_names[1]
+  trait_names[1] <- "GE"
 
   ldsc_output <- ldsc(traits,
                      sample.prev,
@@ -170,10 +183,15 @@ main <- function(argv = NULL) {
                      wld,
                      trait.names)
 
-  res <- subtract_ldsc_extended(ldsc_output, trait.names)
+  output <- subtract_ldsc_extended(ldsc_output)
 
-  print(res)
-  #
+  res <- output$results %>%
+    filter(rhs == "GE") %>%
+    mutate(variance_explained = Unstand_Est^2 / ldsc_output$S[1,1],
+           rhs = if_else(rhs == "GE", gene_id, rhs))
+
+  fwrite(res, sprintf("results_%s.tsv", gene_id), sep="\t", quote=F, row.names=F, col.names=T)
+
   # ref <- args$ref
   # se.logit <- c(F,F)
   # betas <- c(NULL, NULL)
