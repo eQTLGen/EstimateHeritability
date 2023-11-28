@@ -94,6 +94,8 @@ subtract_ldsc_extended <- function(ldsc_output) {
     latent_factors, ge_latent_factor, ge_non_ctc_dependency,
     latent_factor_dependencies, trait_dependencies, ge_dependency, collapse="\n", sep="\n")
 
+  print(model)
+
   output<-usermodel(ldsc_output,estimation="DWLS",model=model)
   return(output)
 }
@@ -120,6 +122,8 @@ subtract_ldsc_extended_pcs <- function(ldsc_output, number_of_components) {
   model <- paste(
     latent_factors, ge_latent_factor, ge_non_ctc_dependency, latent_factor_cross_correlation,
     latent_factor_dependencies, trait_dependencies, ge_dependency, collapse="\n", sep="\n")
+
+  print(model)
 
   output<-usermodel(ldsc_output,estimation="DWLS",model=model)
   print(output)
@@ -204,6 +208,8 @@ main <- function(argv = NULL) {
   trait_names <- args$names
   gene_id <- trait_names[1]
   trait_names[1] <- "GE"
+
+  options(width=240)
 
   ldsc_output <- ldsc(traits,
                      sample.prev,
