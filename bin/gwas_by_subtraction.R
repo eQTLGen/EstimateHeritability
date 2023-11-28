@@ -104,7 +104,7 @@ subtract_ldsc_extended_pcs <- function(ldsc_output, number_of_components) {
 
   latent_factor_names <- paste0("ctc_", 1:number_of_components)
 
-  latent_factors <- paste0(sprintf("%s=~NA*GE + ", latent_factor_names,
+  latent_factors <- paste0(sprintf("%s=~NA*GE + %s", latent_factor_names,
                                    paste0("start(0.1)*", trait_names, collapse = " + ")), collapse="\n")
   ge_latent_factor <- "GeNonCtc=~NA*GE + start(0.2)*GE"
 
