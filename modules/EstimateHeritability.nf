@@ -225,7 +225,7 @@ process GwasBySubtraction {
       path onekg_gwas_by_subtraction_reference
 
     output:
-      path('results_*.tsv')
+      path('component_results_*.tsv')
     
     shell:
     // Should first limit to the trans variants
