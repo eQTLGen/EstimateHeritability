@@ -40,9 +40,7 @@ process CountHeritabilitySnps {
       path oneKgBedFiles
 
     output:
-      path "cis_gen_annot_M_5_50.txt", emit: cis
-      path "trans_gen_annot_M_5_50.txt", emit: trans
-      path "gw_gen_annot_M_5_50.txt", emit: gw
+      path "*_gen_annot_M_5_50.txt", emit: cis
 
     shell:
     '''
@@ -55,7 +53,7 @@ process CountHeritabilitySnps {
     bedtools intersect -a "genes.cis.bed" -b !{oneKgBedFiles} | \
         awk -F '\t' '{print $4}' | sort | uniq -c | sed 's/^ *//' > "cis_gen_annot_M_5_50.txt"
     bedtools intersect -a "genes.trans.bed" -b !{oneKgBedFiles} | \
-            awk -F '\t' '{print $4}' | sort | uniq -c | sed 's/^ *//' | awk -v tot=$n_total '{print (tot - $1),$2}' > "trans_gen_annot_M_5_50.txt"
+        awk -F '\t' '{print $4}' | sort | uniq -c | sed 's/^ *//' | awk -v tot=$n_total '{print (tot - $1),$2}' > "trans_gen_annot_M_5_50.txt"
     awk -v tot=$n_total '{print (tot),$2}' "trans_gen_annot_M_5_50.txt" > "gw_gen_annot_M_5_50.txt"
     '''
 }

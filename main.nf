@@ -9,7 +9,7 @@ nextflow.enable.dsl = 2
 // import modules
 include { GwasBySubtraction; GwasBySubtraction as GwasBySubtractionTrans; EstimateTransHeritabilityLdsc; EstimateTransHeritabilityLdsc as EstimateGwHeritabilityLdsc; EstimateCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; ProcessLdscOutput as ProcessGwLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise; ProcessLdscDeleteVals; ProcessLdscDeleteVals as ProcessLdscDeleteValsGw } from './modules/EstimateHeritability'
 include { WriteOutRes } from './modules/WriteOutRes'
-include { ExtractResults; ExtractResultsPerCohort; ProcessResults } from './modules/CollectResults.nf'
+include { ExtractResults; ExtractResultsPerCohort; ProcessResults; LoadResultsAnnotated } from './modules/CollectResults.nf'
 include { ProcessVuckovicGwasData } from './modules/ProcessGwas.nf'
 
 def helpmessage() {
@@ -119,96 +119,105 @@ workflow {
     // Buffer genes
     genes_buffered_ch = genes_ch.collate(gene_chunk_size)
 
-    if (params.per_cohort) {
-        // Extract loci
-        loci_extracted_ch = ExtractResultsPerCohort(input_parquet_ch, variant_reference_ch, variants_ch, genes_buffered_ch, params.cols, cohorts_ch.collect())
-            .flatten()
-            .map { file ->
-                   def key = file.name.toString().tokenize('.').get(1)
-                   return tuple(key, file) }
-            groupTuple()
-    } else {
-        // Extract loci
-        loci_extracted_ch = ExtractResults(input_parquet_ch, variant_reference_ch, variants_ch, genes_buffered_ch, params.cols)
-            .flatten()
-            .map { file ->
-                   def key = file.name.toString().tokenize('.').get(1)
-                   return tuple(key, file) }
-            groupTuple()
-    }
+    // if (params.per_cohort) {
+    //     // Extract loci
+    //     results_ch = ExtractResultsPerCohort(input_parquet_ch, variant_reference_ch, variants_ch, genes_buffered_ch, params.cols, cohorts_ch.collect())
+    //         .flatten()
+    //         .map { file ->
+    //                def key = file.name.toString().tokenize('.').get(1)
+    //                return tuple(key, file) }
+    //         groupTuple()
+    // } else {
+    //     // Extract loci
+    //     results_ch = ExtractResults(input_parquet_ch, variant_reference_ch, variants_ch, genes_buffered_ch, params.cols)
+    //         .flatten()
+    //         .map { file ->
+    //                def key = file.name.toString().tokenize('.').get(1)
+    //                return tuple(key, file) }
+    //         groupTuple()
+    // }
+
+    LoadResultsAnnotated(
+        input_parquet_ch, variant_reference_ch, variants_ch, gene_reference_ch, inclusion_step_output_ch, maf_table_ch,
+        genes_buffered_ch, cohorts_ch.collect(), i_squared_threshold)
+
+    results_ch = LoadResultsAnnotated.out
+        .flatten()
+        .map { file ->
+               def gene = file.name.toString().tokenize('.').get(2)
+               def annot = file.name.toString().tokenize('.').get(3)
+               def cis_trans_gw = annot.tokenize('_').get(0)
+               return tuple(gene, cis_trans_gw, annot, file) }
+        .groupTuple()
+        .view()
 
     // Split summary statistics in cis and trans regions
-    results_ch = ProcessResults(loci_extracted_ch, variant_reference_ch, gene_reference_ch, inclusion_step_output_ch, cohorts_ch.collect(), i_squared_threshold)
+    // results_ch = ProcessResults(loci_extracted_ch, variant_reference_ch, gene_reference_ch, inclusion_step_output_ch, cohorts_ch.collect(), i_squared_threshold)
 
     // List number of variants per gene
-    results_ch.variants
+    LoadResultsAnnotated.out.variants
         .collectFile(keepHeader: true, skip: 1, name: "variants_per_gene.txt", storeDir: params.output)
 
-    // Count the number of heritability variants for each gene
-    heritability_snps_file_ch = CountHeritabilitySnps(gene_reference_ch, one_kg_bed_ch)
-
-    // Heritability SNPs
-    heritability_snps_cis = heritability_snps_file_ch.cis.splitCsv(header:false, sep:' ')
-        .map { row -> tuple(row[1], "cis", row[0]) }
-    heritability_snps_trans = heritability_snps_file_ch.trans.splitCsv(header:false, sep:' ')
-        .map { row -> tuple(row[1], "trans", row[0]) }
-    heritability_snps_gw = heritability_snps_file_ch.gw.splitCsv(header:false, sep:' ')
-        .map { row -> tuple(row[1], "gw", row[0]) }
-
-    ldsc_cis_in_ch = results_ch.cis.join(heritability_snps_cis, by:[0,1], remainder:false)
-    ldsc_trans_in_ch = results_ch.trans.join(heritability_snps_trans, by:[0,1], remainder:false)
-    ldsc_gw_in_ch = results_ch.gw.join(heritability_snps_gw, by:[0,1], remainder:false)
-
-    // Process GWAS data
-    process_gwas_ch = ProcessVuckovicGwasData(gwas_input_ch, hapmap_ch)
-
-    // Run Heritability estimates
-    ldsc_cis_output_ch = EstimateCisHeritabilityLdsc(
-        ldsc_cis_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
-
-    ldsc_trans_output_ch = EstimateTransHeritabilityLdsc(
-        ldsc_trans_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
-
-    ldsc_gw_output_ch = EstimateGwHeritabilityLdsc(
-        ldsc_gw_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
-
-    EstimateHeritabilityLdscAllPairwise(
-        process_gwas_ch.map { name, gws, file -> name }.collect(),
-        process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
-
-    GwasBySubtraction(
-        ldsc_gw_in_ch,
-        gwas_input_ch.map { name, gws, n -> gws }.collect(),
-        process_gwas_ch.map { name, gws, file -> name }.collect(),
-        process_gwas_ch.map { name, gws, file -> file }.collect(),
-        ld_ch, onekg_gwas_by_subtraction_reference)
-        .collectFile(name:'latent_factors_cis_comp.txt', skip: 1, keepHeader: true, storeDir: params.output)
-    GwasBySubtractionTrans(
-        ldsc_trans_in_ch,
-        gwas_input_ch.map { name, gws, n -> gws }.collect(),
-        process_gwas_ch.map { name, gws, file -> name }.collect(),
-        process_gwas_ch.map { name, gws, file -> file }.collect(),
-        ld_ch, onekg_gwas_by_subtraction_reference)
-        .collectFile(name:'latent_factors_trans_comp.txt', skip: 1, keepHeader: true, storeDir: params.output)
-
-    // Process LDSC logs
-    ldsc_cis_matrices_ch = ProcessCisLdscOutput(ldsc_cis_output_ch)
-        .collectFile(name:'ldsc_table_cis.txt', skip: 1, keepHeader: true, storeDir: params.output)
-    ldsc_trans_matrices_ch = ProcessTransLdscOutput(ldsc_trans_output_ch)
-        .collectFile(name:'ldsc_table_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
-    ldsc_gw_matrices_ch = ProcessGwLdscOutput(ldsc_gw_output_ch)
-        .collectFile(name:'ldsc_table_gw.txt', skip: 1, keepHeader: true, storeDir: params.output)
-
-    // Process LDSC stuff
-    ProcessLdscDeleteVals(
-        ldsc_trans_output_ch.map { name, gws, file, del -> name }.collect(),
-        ldsc_trans_output_ch.map { name, gws, file, del -> del }.collect(),
-        ldsc_trans_matrices_ch, "trans")
-
-    ProcessLdscDeleteValsGw(
-        ldsc_gw_output_ch.map { name, gws, file, del -> name }.collect(),
-        ldsc_gw_output_ch.map { name, gws, file, del -> del }.collect(),
-        ldsc_gw_matrices_ch, "gw")
+    //// Count the number of heritability variants for each gene
+    //heritability_snps_file_ch = CountHeritabilitySnps(gene_reference_ch, one_kg_bed_ch)
+//
+    //// Heritability SNPs
+    //heritability_snps = heritability_snps_file_ch.splitCsv(header:false, sep:' ')
+    //    .flatten()
+    //    .map { file ->
+    //           def gene = file.name.toString().tokenize('.').get(2)
+    //           def cis_trans_gw = file.name.toString().tokenize('.').get(3)
+    //           return tuple(gene, cis_trans_gw, file) }
+    //    .groupTuple()
+//
+    //ldsc_in_ch = results_ch.join(heritability_snps, by:[0,1], remainder:false)
+//
+    //// Process GWAS data
+    //process_gwas_ch = ProcessVuckovicGwasData(gwas_input_ch, hapmap_ch)
+//
+    //// Run Heritability estimates
+    //ldsc_cis_output_ch = EstimateCisHeritabilityLdsc(
+    //    ldsc_cis_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
+//
+    //ldsc_trans_output_ch = EstimateTransHeritabilityLdsc(
+    //    ldsc_trans_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
+//
+    //ldsc_gw_output_ch = EstimateGwHeritabilityLdsc(
+    //    ldsc_gw_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
+//
+    //GwasBySubtraction(
+    //    ldsc_gw_in_ch,
+    //    gwas_input_ch.map { name, gws, n -> gws }.collect(),
+    //    process_gwas_ch.map { name, gws, file -> name }.collect(),
+    //    process_gwas_ch.map { name, gws, file -> file }.collect(),
+    //    ld_ch, onekg_gwas_by_subtraction_reference)
+    //    .collectFile(name:'latent_factors_cis_comp.txt', skip: 1, keepHeader: true, storeDir: params.output)
+    //GwasBySubtractionTrans(
+    //    ldsc_trans_in_ch,
+    //    gwas_input_ch.map { name, gws, n -> gws }.collect(),
+    //    process_gwas_ch.map { name, gws, file -> name }.collect(),
+    //    process_gwas_ch.map { name, gws, file -> file }.collect(),
+    //    ld_ch, onekg_gwas_by_subtraction_reference)
+    //    .collectFile(name:'latent_factors_trans_comp.txt', skip: 1, keepHeader: true, storeDir: params.output)
+//
+    //// Process LDSC logs
+    //ldsc_cis_matrices_ch = ProcessCisLdscOutput(ldsc_cis_output_ch)
+    //    .collectFile(name:'ldsc_table_cis.txt', skip: 1, keepHeader: true, storeDir: params.output)
+    //ldsc_trans_matrices_ch = ProcessTransLdscOutput(ldsc_trans_output_ch)
+    //    .collectFile(name:'ldsc_table_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
+    //ldsc_gw_matrices_ch = ProcessGwLdscOutput(ldsc_gw_output_ch)
+    //    .collectFile(name:'ldsc_table_gw.txt', skip: 1, keepHeader: true, storeDir: params.output)
+//
+    //// Process LDSC stuff
+    //ProcessLdscDeleteVals(
+    //    ldsc_trans_output_ch.map { name, gws, file, del -> name }.collect(),
+    //    ldsc_trans_output_ch.map { name, gws, file, del -> del }.collect(),
+    //    ldsc_trans_matrices_ch, "trans")
+//
+    //ProcessLdscDeleteValsGw(
+    //    ldsc_gw_output_ch.map { name, gws, file, del -> name }.collect(),
+    //    ldsc_gw_output_ch.map { name, gws, file, del -> del }.collect(),
+    //    ldsc_gw_matrices_ch, "gw")
 
     // WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
 }

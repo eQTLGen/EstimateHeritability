@@ -165,9 +165,86 @@ class GtfParser:
         return df[['gene_id', 'chromosome', 'start', 'end']].drop_duplicates(keep='first', subset=["gene_id"])
 
 
+class Clumper:
+    def __init__(self, p_threshold=5e-8, window=1000000):
+        self.p_threshold = p_threshold
+        self.window = window
+
+    def identify_lead_snps(self, eqtls_annotated):
+        p_threshold = self.p_threshold
+        window = self.window
+        data_filtered = eqtls_annotated.loc[eqtls_annotated['p_value'] < p_threshold]
+
+        # Iteratively identify most significant SNP, and remove all other SNPs in the window
+        res = list()
+
+        while data_filtered.shape[0] > 0:
+            lead_snp = data_filtered.loc[data_filtered['p_value'].idxmin()]
+            res.append(lead_snp)
+
+            data_filtered = data_filtered[~(
+                    (data_filtered['chromosome_variant'] == lead_snp['chromosome_variant']) &
+                    (data_filtered['bp_variant'] > lead_snp['bp_variant'] - window) &
+                    (data_filtered['bp_variant'] < lead_snp['bp_variant'] + window))]
+
+        res_df = pd.DataFrame(res)
+        return res_df
+
+    def filter_significant_effects(self, eqtls_annotated):
+        p_threshold = self.p_threshold
+        window = self.window
+        data_filtered = pd.DataFrame(eqtls_annotated)
+
+        # Iteratively identify most significant SNP, and remove all other SNPs in the window
+        res = list()
+
+        while data_filtered['p_value'].min() < p_threshold:
+            lead_snp = data_filtered.loc[data_filtered['p_value'].idxmin()]
+            res.append(lead_snp)
+
+            data_filtered = data_filtered[~(
+                    (data_filtered['chromosome_variant'] == lead_snp['chromosome_variant']) &
+                    (data_filtered['bp_variant'] > lead_snp['bp_variant'] - window) &
+                    (data_filtered['bp_variant'] < lead_snp['bp_variant'] + window))]
+
+        print(pd.DataFrame(res))
+        print(data_filtered.shape[0])
+        return data_filtered
+
+
 # Functions
 
-# Main
+def load_allele_frequencies(args, variant_reference):
+    maf_dataframe = (
+        pd.read_table(args.maf)
+        .drop(["MedianMaf", "CombinedMaf", "POS", "CHR"], axis=1)
+        .rename({"ID": "variant", "OtherAllele": "other_allele_maf", "Allele": "allele_maf"}, axis=1)
+        .set_index("variant"))
+    maf_dataframe = pd.merge(maf_dataframe, variant_reference,
+                             left_index=True, right_on="variant", validate="1:1").set_index("variant")
+    maf_dataframe["flipped"] = maf_dataframe["allele_ref"] == maf_dataframe["allele_maf"]
+    print((maf_dataframe["allele_ref"] == maf_dataframe["allele_maf"]).sum())
+    print((maf_dataframe["allele_eff"] == maf_dataframe["allele_maf"]).sum())
+    assert np.alltrue(maf_dataframe["flipped"] == ~(maf_dataframe["allele_eff"] == maf_dataframe["allele_maf"]))
+    return maf_dataframe
+
+
+def load_variant_list(args):
+    variants_list = None
+    print("Variant selection")
+    if args.variants_file is not None:
+        print("Using variants file '%s' to filter on variants." % args.variants_file)
+        variants_list = (
+            pd.read_csv(args.variants_file, header=None, delimiter='\t')
+            .iloc[:, 0].tolist())
+    if args.variants is not None:
+        print("Provided %d variants for filtering." % len(args.variants))
+        if variants_list is not None:
+            print("Variant filter already defined. Skipping...")
+        variants_list = args.variants
+    return variants_list
+
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv
@@ -185,6 +262,12 @@ def main(argv=None):
                         help='Prefix to use for output file names')
     parser.add_argument('--cohorts', dest='cohorts', required=True, nargs='+',
                             help='Names of cohorts used in the meta-analysis')
+    parser.add_argument('--maf-table', dest='maf', required=True,
+                        help='Path to the table containing minor allele frequencies')
+    parser.add_argument('-v', '--variants', required = False, default = None, nargs = '+',
+                        help="""Individual SNP IDs specified and separated by space.""")
+    parser.add_argument('-V', '--variants-file', required = False, default = None,
+                        help="""File with the list of SNPs/variants to include.""")
     parser.add_argument('--inclusion-path', dest='inclusion_path', required=True,
                         help='Inclusion_path')
     parser.add_argument('--i2-threshold', dest='i_squared_threshold', type=float, required=False,
@@ -195,13 +278,34 @@ def main(argv=None):
     print("Loading variant reference from '{}'".format(args.variant_reference))
 
     variant_reference = (
-        pd.read_csv(args.variant_reference, sep=' ', dtype={'CHR': "Int64", 'bp': "Int64"})
+        pd.read_csv("~/Downloads/1000G-30x.ref.gz", sep=' ', dtype={'CHR': "Int64", 'bp': "Int64"})
         .drop(["allele1", "allele2"], axis=1)
         .rename({"ID": "variant", "bp": "bp_variant", "CHR": "chromosome_variant",
                  "str_allele1": "allele_ref", "str_allele2": "allele_eff"}, axis=1))
 
     print("Variant reference loaded:")
     print(variant_reference.head())
+
+    variant_list = load_variant_list(args)
+
+    print("Loading minor allele frequencies from '{}'".format(args.maf))
+
+    maf_dataframe = load_allele_frequencies(args, variant_reference)
+
+    print("Minor allele frequencies loaded:")
+    print(maf_dataframe.head())
+
+    cohorts = np.array(args.cohorts)
+
+    print("Initiating MAF calculator...")
+
+    maf_calculator = MafCalculator(
+        inclusion_path=args.inclusion_path,
+        cohorts=cohorts,
+        maf_table=maf_dataframe,
+        flipped=maf_dataframe["flipped"])
+
+    print("MAF calculator initiated!")
 
     print("Loading gene annotations from '{}'".format(args.gene_ref))
 
@@ -251,53 +355,92 @@ def main(argv=None):
 
     (pd.DataFrame({"n_passed_variants": n_passed_variants,
                   "n_failed_variants": n_failed_variants},
-                 index = np.array(["i_squared", "sample_size", "overall", "gene"]))
+                  index = np.array(["i_squared", "sample_size", "overall", "gene"]))
         .to_csv("{}_passed_variants.csv".format(args.out_prefix), sep="\t", index=True, index_label="class"))
 
     # For each gene, check what the number of variants are. If it is lower than
 
-    if eqtls_filtered.shape[0] < 0.5 * eqtls.shape[0]:
-        print("The number of filtered variants is under 50% of the number of input variants ({} vs {}, {}%)"
-              .format(eqtls_filtered.shape[0], eqtls.shape[0], eqtls_filtered.shape[0]/eqtls.shape[0]))
+    n_variants_unfiltered = eqtls.groupby("phenotype").size()
+    n_variants_filtered = eqtls_filtered.groupby("phenotype").size()
+
+    genes_failed = n_variants_filtered.index[n_variants_unfiltered * 0.5 > n_variants_filtered].values()
+    eqtls_genes_filtered = eqtls_filtered[~eqtls_filtered.phenotype.isin(genes_failed)]
+
+    print("For {} out of {} genes, the number of filtered variants is under 50% of the number of input variants"
+          .format(len(genes_failed), len(n_variants_unfiltered)))
+
+    if eqtls_genes_filtered.shape[0] < 0:
+        print("No genes left!")
         print("exiting...")
         return 0
 
     # Perform method
     eqtls_annotated = (
-        eqtls_filtered
+        eqtls_genes_filtered
         .merge(variant_reference, how="inner", on="variant", validate="m:1")
         .merge(gene_dataframe, how="inner", left_on="phenotype", right_on="gene_id",
                suffixes=('', '_gene'), validate="m:1"))
 
-    print(eqtls_annotated.head())
+    clumper = Clumper(p_threshold=5e-8, window=1000000)
+    lead_effects = (
+        eqtls_annotated
+        .groupby("phenotype", group_keys=False).apply(lambda x: clumper.identify_lead_snps(x)))
+
+    maf = maf_calculator.calculate_maf(lead_effects[['variant', 'phenotype']])
+    lead_effects['allele_eff_freq'] = maf.values
+
+    lead_effects['variance_explained'] = (
+           2 * lead_effects['allele_eff_freq'] * (1 - lead_effects['allele_eff_freq'])
+           * np.power(lead_effects['effect_size'], 2))
+
+    polygenic = (
+        eqtls_annotated
+        .groupby("phenotype", group_keys=False).apply(lambda x: clumper.filter_significant_effects(x))).index
 
     # Identify genes that have a cis-effect
     cis_window_flank_size = 1 * 10 ** 6
     trans_window_flank_size = 5 * 10 ** 6
 
-    cis = np.logical_and(
-        eqtls_annotated.chromosome_variant == eqtls_annotated.chromosome_gene,
-        np.logical_and(eqtls_annotated.start - cis_window_flank_size < eqtls_annotated.bp_variant,
-                       eqtls_annotated.end + cis_window_flank_size > eqtls_annotated.bp_variant))
+    # Variants
+    confined = eqtls_annotated.loc[eqtls_annotated.variant.isin(np.array(variant_list))]
+    common = confined.index.intersection(polygenic.index)
 
+    # Cis effects
+    cis = np.logical_and(
+        confined.chromosome_variant == confined.chromosome_gene,
+        np.logical_and(confined.start - cis_window_flank_size < confined.bp_variant,
+                       confined.end + cis_window_flank_size > confined.bp_variant))
+
+    # Trans effects
     trans = ~np.logical_and(
-        eqtls_annotated.chromosome_variant == eqtls_annotated.chromosome_gene,
-        np.logical_and(eqtls_annotated.start - trans_window_flank_size < eqtls_annotated.bp_variant,
-                       eqtls_annotated.end + trans_window_flank_size > eqtls_annotated.bp_variant))
+        confined.chromosome_variant == confined.chromosome_gene,
+        np.logical_and(confined.start - trans_window_flank_size < confined.bp_variant,
+                       confined.end + trans_window_flank_size > confined.bp_variant))
 
     ldsc_selector = {"variant": "SNP", "sample_size": "N", "z_score": "Z", "p_value": "P",
                      "beta": "BETA", "standard_error": "SE", "allele_eff": "A1", "allele_ref": "A2"}
 
-    ldsc_processed_output = eqtls_annotated.rename(columns=ldsc_selector)[[*ldsc_selector.values()]]
+    out = confined.rename(columns=ldsc_selector)[[*ldsc_selector.values()]]
 
-    if ldsc_processed_output.loc[cis].shape[0] > 0:
-        ldsc_processed_output.loc[cis].to_csv("{}_cis.csv.gz".format(args.out_prefix), sep="\t", index=False)
-    if ldsc_processed_output.loc[trans].shape[0] > 0:
-        ldsc_processed_output.loc[trans].to_csv("{}_trans.csv.gz".format(args.out_prefix), sep="\t", index=False)
-    if ldsc_processed_output.shape[0] > 0:
-        ldsc_processed_output.to_csv("{}_gw.csv.gz".format(args.out_prefix), sep="\t", index=False)
+    # output all data
+    if out.loc[cis].shape[0] > 0:
+        out.loc[cis].to_csv("{}.sumstats.cis_all.csv.gz".format(args.out_prefix), sep="\t", index=False)
+    if out.loc[trans].shape[0] > 0:
+        out.loc[trans].to_csv("{}.sumstats.trans_all.csv.gz".format(args.out_prefix), sep="\t", index=False)
+    if out.shape[0] > 0:
+        out.to_csv("{}.sumstats.gw_all.csv.gz".format(args.out_prefix), sep="\t", index=False)
 
-    # Output
+    # output polygenic signal only
+    if out.loc[cis.loc[common]].shape[0] > 0:
+        out.loc[cis.loc[common]].to_csv("{}.sumstats.cis_polygenic.csv.gz".format(args.out_prefix), sep="\t", index=False)
+    if out.loc[trans.loc[common]].shape[0] > 0:
+        out.loc[trans.loc[common]].to_csv("{}.sumstats.trans_polygenic.csv.gz".format(args.out_prefix), sep="\t", index=False)
+    if out.loc[common].shape[0] > 0:
+        out.loc[common].to_csv("{}.sumstats.gw_polygenic.csv.gz".format(args.out_prefix), sep="\t", index=False)
+
+    # output lead effects
+    if lead_effects.shape[0] > 0:
+        lead_effects.to_csv("{}_lead_effects.csv.gz".format(args.out_prefix), sep="\t", index=False)
     return 0
 
 

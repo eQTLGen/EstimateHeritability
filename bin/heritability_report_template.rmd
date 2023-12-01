@@ -277,3 +277,65 @@ p <- ggplot(combiend %>% filter(annot == "trans", p1 != p2, meta_analysis == "20
 ggsave("covariances_violin_mr.pdf", p, width = 6, height = 6)
 
 ```
+
+```{r}
+
+latent_factors_cis <- fread("latent_factors_cis.txt") %>% mutate(annot="cis")
+latent_factors_trans <- fread("latent_factors_trans.txt") %>% mutate(annot="trans")
+
+merged_factors <- bind_rows(latent_factors_cis, latent_factors_trans) %>%
+        filter(op == "=~") %>%
+        mutate(marker_gene = rhs %in% mr_genes$ID)
+
+summarised_cell_type_factors <- merged_factors %>% filter(lhs != "GeNonCtc") %>% group_by(rhs, annot) %>%
+        summarise(sum_of_ct_explained_variance = sum(variance_explained))
+
+summarised_sign_cell_type_factors <- merged_factors %>% filter(lhs != "GeNonCtc") %>% filter(p_value < 0.05) %>% group_by(rhs, annot) %>%
+        summarise(sum_of_ct_sign_explained_variance = sum(variance_explained))
+
+
+
+filtered <- merged_factors %>% filter(lhs == "GeNonCtc")
+
+my_new_table <- tibble(h2_table_concat) %>% inner_join(filtered, by=c("gene_id"="rhs", "marker_gene", "annot")) %>%
+        left_join(summarised_cell_type_factors, by = c("gene_id"="rhs", "annot")) %>%
+        left_join(summarised_sign_cell_type_factors, by = c("gene_id"="rhs", "annot")) %>%
+        rename(sum_of_cell_types = sum_of_ct_explained_variance, gene_expression = variance_explained) %>%
+        rowwise() %>%
+        mutate(sum_of_variance_explained = sum(sum_of_cell_types, gene_expression, na.rm=T),
+               ratio_variance_explained_ge = gene_expression / sum_of_variance_explained) %>%
+        ungroup()
+
+pivotted_table <- my_new_table %>%
+        group_by(annot) %>%
+        mutate(rank = base::rank(sum_of_variance_explained)) %>%
+        pivot_longer(
+             cols=c("sum_of_cell_types", "gene_expression"),
+             values_to = "variance_explained",
+             names_to="type")
+
+p <- ggplot(pivotted_table, aes(x=rank, y=variance_explained, fill=type, alpha=p_value<0.05)) +
+        geom_col(stat='identity', position = position_stack(reverse = TRUE)) +
+        coord_cartesian(ylim= c(-1, 2)) +
+        facet_wrap(vars(annot), nrow=2)
+ggsave("explained_variance_bars_non_sign_h2_11-28_trans.pdf", p, width = 4, height = 4)
+
+p <- ggplot(pivotted_table, aes(x=rank, y=variance_explained, fill=type, alpha=p_value<0.05)) +
+        geom_col(stat='identity', position = position_dodge()) +
+        coord_cartesian(ylim= c(-1, 2)) +
+        facet_wrap(vars(annot), nrow=2)
+ggsave("explained_variance_bars_dodge_h2_11-28_trans.pdf", p, width = 4, height = 4)
+
+p <- ggplot(my_new_table, aes(h2_obs, ratio_variance_explained_ge, colour = marker_gene, alpha = -log10(p_value))) +
+        geom_point() + facet_wrap(vars(annot), nrow=2)
+ggsave("explained_variance_ratio_h2_11-28_trans.pdf", p, width = 4, height = 4)
+
+p <- ggplot(my_new_table, aes(x=marker_gene, y=ratio_variance_explained_ge, fill = -log10(p_value))) +
+        geom_violin() + facet_wrap(vars(annot), nrow=2)
+ggsave("explained_variance_ratio_violin_h2_11-28_trans.pdf", p, width = 4, height = 4)
+
+p <- ggplot(filtered, aes(marker_gene, variance_explained, fill=p_value < 0.05)) + geom_violin() + facet_wrap(vars(annot), nrow=2)
+ggsave("violin_explained_variance_h2_11-28_trans.pdf", p, width = 4, height = 4)
+
+p <- ggplot(merged_factors)
+```

@@ -110,3 +110,55 @@ process ProcessResults {
             --i2-threshold ${isqThreshold}
         """
 }
+
+
+process LoadResultsAnnotated {
+    scratch true
+
+    input:
+        path input
+        path variantReference
+        path variants
+        path geneReference
+        path inclusionDir
+        path mafTable
+        val genes
+        val cohorts
+        val isqThreshold
+
+    output:
+        path "annotated.${genes.join("_")}.sumstats.*.csv.gz", emit: sumstats
+        path "annotated.${genes.join("_")}.lead_effects.csv.gz", emit: leads
+        path "annotated.${genes.join("_")}.passed_variants.csv", emit: variants
+
+    shell:
+        variants_arg = (variants.name != 'NO_FILE') ? "--variants-file ${variants}" : ""
+        '''
+        mkdir tmp_eqtls
+        echo "!{phenotypes_formatted}" > file_matches.txt
+
+        while read gene; do
+          cp -r "!{input}/${gene}" tmp_eqtls/
+        done <file_matches.txt
+
+        extract_parquet_results.py \
+            --input-file tmp_eqtls \
+            --variant-reference !{variantReference} \
+            --genes !{genes.join(' ')} \
+            --cols '+z_score,+p_value' \
+            --output-prefix extracted
+
+        annotate_loci.py \
+            --input-file extracted.csv \
+            --cohorts !{cohorts.join(' ')} \
+            --inclusion-path !{inclusionDir} \
+            --maf-table !{mafTable} \
+            --variant-reference !{variantReference} \
+            !{variants_arg} \
+            --gene-ref !{geneReference} \
+            --out-prefix annotated.!{genes.join("_")} \
+            --i2-threshold !{isqThreshold}
+
+        rm -r tmp_eqtls
+        """
+}

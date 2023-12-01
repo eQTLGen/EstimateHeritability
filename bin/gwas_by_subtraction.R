@@ -100,6 +100,49 @@ subtract_ldsc_extended <- function(ldsc_output) {
   return(output)
 }
 
+
+subtract_ldsc_extended_cor <- function(ldsc_output) {
+
+  trait_names <- colnames(ldsc_output$S[,2:ncol(ldsc_output$S)])
+
+  latent_factor_names <- paste0("ctc_", trait_names)
+
+  trait_correlations <- cov2cor(ldsc_output$S[2:nrow(ldsc_output$S),2:ncol(ldsc_output$S)])
+  diag(trait_correlations) <- 0
+  upper.tri(trait_correlations) <- 0
+
+  numbers <- which(trait_correlations > 0.8)
+
+  cor_trait_col <- ((numbers - 1) %/% 3) + 1
+  cor_trait_row <- ((numbers - 1) %% 3) + 1
+
+  cor_traits <- unique(c(cor_trait_col, cor_trait_row))
+
+  latent_factors <- paste0(sprintf(
+    "%s=~NA*GE + start(0.4)*%s",
+    latent_factor_names[-cor_traits],
+    trait_names[-cor_traits]), collapse="\n")
+
+  ge_latent_factor <- "GeNonCtc=~NA*GE + start(0.2)*GE"
+
+  ge_non_ctc_dependency <- "GeNonCtc~~1*GeNonCtc"
+
+  latent_factor_dependencies <- paste0(sprintf("%s~~1*%1$s\n%1$s~~0*GeNonCtc", latent_factor_names), collapse="\n")
+  trait_dependencies <- paste0(sprintf("%s~~0*%1$s\n%1$s~~0*GE", trait_names), collapse="\n")
+
+  ge_dependency <- "GE~~0*GE"
+
+  model <- paste(
+    latent_factors, ge_latent_factor, ge_non_ctc_dependency,
+    latent_factor_dependencies, trait_dependencies, ge_dependency, collapse="\n", sep="\n")
+
+  print(model)
+
+  output<-usermodel(ldsc_output,estimation="DWLS",model=model)
+  return(output)
+}
+
+
 subtract_ldsc_extended_pcs <- function(ldsc_output, number_of_components) {
 
   trait_names <- colnames(ldsc_output$S[,2:ncol(ldsc_output$S)])
@@ -218,28 +261,7 @@ main <- function(argv = NULL) {
                      wld,
                      trait_names)
 
-  output <- subtract_ldsc_extended(ldsc_output)
-
-  res <- output$results %>%
-    filter(rhs == "GE") %>%
-    mutate(variance_explained = Unstand_Est^2 / ldsc_output$S[1,1],
-           rhs = if_else(rhs == "GE", gene_id, rhs))
-
-  fwrite(res, sprintf("results_%s.tsv", gene_id), sep="\t", quote=F, row.names=F, col.names=T)
-
-
-  # Number of principal components
-  cell_type_correlations <- cov2cor(ldsc_output$S[2:nrow(ldsc_output$S),2:ncol(ldsc_output$S)])
-  pca_out <- princomp(cell_type_correlations)
-  print(summary(pca_out))
-  proportion_of_variance <- pca_out$sdev^2/sum(pca_out$sdev^2)
-  print(proportion_of_variance)
-  cumsum_result <- cumsum(proportion_of_variance)
-  print(cumsum_result)
-  number_of_principal_components <- sum(cumsum_result > 0.95)
-
-  output <- subtract_ldsc_extended_pcs(ldsc_output, number_of_principal_components)
-
+  output <- subtract_ldsc_extended_cor(ldsc_output)
 
   res <- output$results %>%
     filter(rhs == "GE") %>%
@@ -247,6 +269,27 @@ main <- function(argv = NULL) {
            rhs = if_else(rhs == "GE", gene_id, rhs))
 
   fwrite(res, sprintf("component_results_%s.tsv", gene_id), sep="\t", quote=F, row.names=F, col.names=T)
+
+
+  # Number of principal components
+  # cell_type_correlations <- cov2cor(ldsc_output$S[2:nrow(ldsc_output$S),2:ncol(ldsc_output$S)])
+  # pca_out <- princomp(cell_type_correlations)
+  # print(summary(pca_out))
+  # proportion_of_variance <- pca_out$sdev^2/sum(pca_out$sdev^2)
+  # print(proportion_of_variance)
+  # cumsum_result <- cumsum(proportion_of_variance)
+  # print(cumsum_result)
+  # number_of_principal_components <- sum(cumsum_result < 0.95) + 1
+  #
+  # output <- subtract_ldsc_extended_pcs(ldsc_output, number_of_principal_components)
+  #
+  #
+  # res <- output$results %>%
+  #   filter(rhs == "GE") %>%
+  #   mutate(variance_explained = Unstand_Est^2 / ldsc_output$S[1,1],
+  #          rhs = if_else(rhs == "GE", gene_id, rhs))
+  #
+  # fwrite(res, sprintf("component_results_%s.tsv", gene_id), sep="\t", quote=F, row.names=F, col.names=T)
 
 
   # ref <- args$ref
