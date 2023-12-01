@@ -150,7 +150,7 @@ process LoadResultsAnnotated {
             --output-prefix extracted
 
         annotate_loci.py \
-            --input-file extracted.csv \
+            --input-file extracted.out.csv \
             --cohorts !{cohorts.join(' ')} \
             --inclusion-path !{inclusionDir} \
             --maf-table !{mafTable} \

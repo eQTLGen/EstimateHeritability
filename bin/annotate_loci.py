@@ -363,7 +363,7 @@ def main(argv=None):
     n_variants_unfiltered = eqtls.groupby("phenotype").size()
     n_variants_filtered = eqtls_filtered.groupby("phenotype").size()
 
-    genes_failed = n_variants_filtered.index[n_variants_unfiltered * 0.5 > n_variants_filtered].values()
+    genes_failed = n_variants_filtered.index[n_variants_unfiltered * 0.5 > n_variants_filtered].values
     eqtls_genes_filtered = eqtls_filtered[~eqtls_filtered.phenotype.isin(genes_failed)]
 
     print("For {} out of {} genes, the number of filtered variants is under 50% of the number of input variants"
