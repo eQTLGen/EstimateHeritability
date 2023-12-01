@@ -160,5 +160,5 @@ process LoadResultsAnnotated {
             --i2-threshold !{isqThreshold}
 
         rm -r tmp_eqtls
-        """
+        '''
 }
