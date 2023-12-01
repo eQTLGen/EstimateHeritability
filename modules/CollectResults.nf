@@ -128,8 +128,8 @@ process LoadResultsAnnotated {
 
     output:
         path "annotated.${genes.join("_")}.sumstats.*.csv.gz", emit: sumstats
-        path "annotated.${genes.join("_")}.lead_effects.csv.gz", emit: leads
-        path "annotated.${genes.join("_")}.passed_variants.csv", emit: variants
+        path "annotated.lead_effects.csv.gz", emit: leads
+        path "annotated.passed_variants.csv", emit: variants
 
     shell:
         variants_arg = (variants.name != 'NO_FILE') ? "--variants-file ${variants}" : ""

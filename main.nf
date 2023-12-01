@@ -143,7 +143,7 @@ workflow {
         input_parquet_ch, variant_reference_ch, variants_ch, gene_reference_ch, inclusion_step_output_ch, maf_table_ch,
         genes_buffered_ch, cohorts_ch.collect(), i_squared_threshold)
 
-    results_ch = LoadResultsAnnotated.out
+    results_ch = LoadResultsAnnotated.out.sumstats
         .flatten()
         .map { file ->
                def gene = file.name.toString().tokenize('.').get(2)
