@@ -85,6 +85,8 @@ hapmap_ch = file(params.hapmap)
 i_squared_threshold = 100
 onekg_gwas_by_subtraction_reference = Channel.fromPath("data/reference.1000G.maf.0.005.txt.gz").collect()
 
+Channel.fromPath(params.maf_table).collect().set { maf_table_ch }
+
 ld_ch = Channel.fromPath(params.ld_w_dir, type: 'dir').collect()
 
 gene_chunk_size=1
