@@ -278,7 +278,7 @@ def main(argv=None):
     print("Loading variant reference from '{}'".format(args.variant_reference))
 
     variant_reference = (
-        pd.read_csv("~/Downloads/1000G-30x.ref.gz", sep=' ', dtype={'CHR': "Int64", 'bp': "Int64"})
+        pd.read_csv(args.variant_reference, sep=' ', dtype={'CHR': "Int64", 'bp': "Int64"})
         .drop(["allele1", "allele2"], axis=1)
         .rename({"ID": "variant", "bp": "bp_variant", "CHR": "chromosome_variant",
                  "str_allele1": "allele_ref", "str_allele2": "allele_eff"}, axis=1))
