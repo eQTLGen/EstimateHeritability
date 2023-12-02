@@ -391,7 +391,7 @@ def main(argv=None):
 
     lead_effects['variance_explained'] = (
            2 * lead_effects['allele_eff_freq'] * (1 - lead_effects['allele_eff_freq'])
-           * np.power(lead_effects['effect_size'], 2))
+           * np.power(lead_effects['beta'], 2))
 
     polygenic = (
         eqtls_annotated
