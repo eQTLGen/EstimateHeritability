@@ -403,7 +403,7 @@ def main(argv=None):
 
     # Variants
     confined = eqtls_annotated.loc[eqtls_annotated.variant.isin(np.array(variant_list))]
-    common = confined.index.intersection(polygenic.index)
+    common = confined.index.intersection(polygenic)
 
     # Cis effects
     cis = np.logical_and(
