@@ -96,7 +96,9 @@ subtract_ldsc_per_cell_type <- function(ldsc_output) {
 
     output <- usermodel(ldsc_output,estimation="DWLS",model=model)
     res <- output$results %>%
-      filter(rhs == "GE", op == "=~")
+      filter(rhs == "GE", op == "=~") %>%
+      mutate(cell_type = trait_name) %>%
+      mutate(across(c(Unstand_Est, Unstand_SE, STD_Genotype, STD_Genotype_SE, STD_All, p_value), as.numeric))
   }, trait_names, SIMPLIFY = F, USE.NAMES = F))
 
   return(res)
@@ -132,7 +134,8 @@ subtract_ldsc_extended <- function(ldsc_output, selection=NULL) {
   output<-usermodel(ldsc_output,estimation="DWLS",model=model)
   print(output)
   res <- output$results %>%
-    filter(rhs == "GE", op == "=~")
+    filter(rhs == "GE", op == "=~") %>%
+    mutate(across(c(Unstand_Est, Unstand_SE, STD_Genotype, STD_Genotype_SE, STD_All, p_value), as.numeric))
   return(res)
 }
 
@@ -271,7 +274,7 @@ main <- function(argv = NULL) {
   print(cumsum_result)
   number_of_principal_components <- sum(cumsum_result > 0.95)
 
-  uncorrelated <- c("Red_blood_cell_count", "Platelet_count", "Reticulocyte_count", "Eosinophil_count", "Basophil_count")
+  uncorrelated <- c("Red_blood_cell_count", "Platelet_count", "Reticulocyte_count", "Eosinophil_counts", "Basophil_count")
 
   res <- bind_rows(list(
     "per_cell_type" = subtract_ldsc_per_cell_type(ldsc_output),
