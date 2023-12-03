@@ -289,13 +289,16 @@ main <- function(argv = NULL) {
 
   uncorrelated <- c("Red_blood_cell_count", "Platelet_count", "Reticulocyte_count", "Eosinophil_counts", "Basophil_count")
 
-  res <- bind_rows(list(
+  res_raw <- bind_rows(list(
     "per_cell_type" = subtract_ldsc_per_cell_type(ldsc_output),
     "all" = subtract_ldsc_extended(ldsc_output),
-    "pruned" = subtract_ldsc_extended(ldsc_output, uncorrelated)), .id = "analysis") %>%
-    mutate(rhs = if_else(rhs == "GE", gene_id, rhs))
+    "pruned" = subtract_ldsc_extended(ldsc_output, uncorrelated)), .id = "analysis")
 
-  fwrite(res, sprintf("results_%s.tsv", gene_id), sep="\t", quote=F, row.names=F, col.names=T)
+  if (!is.null(res_raw) & nrow(res_raw) > 0 & "rhs" %in% colnames(res_raw)) {
+    res <- res_raw %>% mutate(rhs = if_else(rhs == "GE", gene_id, rhs))
+    fwrite(res, sprintf("results_%s.tsv", gene_id), sep="\t", quote=F, row.names=F, col.names=T)
+  }
+
 
 
   # ref <- args$ref
