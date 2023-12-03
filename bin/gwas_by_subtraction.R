@@ -96,8 +96,7 @@ subtract_ldsc_per_cell_type <- function(ldsc_output) {
 
     output <- usermodel(ldsc_output,estimation="DWLS",model=model)
     res <- output$results %>%
-      filter(rhs == "GE", op == "=~") %>%
-      mutate(rhs = if_else(rhs == "GE", gene_id, rhs))
+      filter(rhs == "GE", op == "=~")
   }, trait_names, SIMPLIFY = F, USE.NAMES = F))
 
   return(res)
@@ -133,8 +132,7 @@ subtract_ldsc_extended <- function(ldsc_output, selection=NULL) {
   output<-usermodel(ldsc_output,estimation="DWLS",model=model)
   print(output)
   res <- output$results %>%
-    filter(rhs == "GE", op == "=~") %>%
-    mutate(rhs = if_else(rhs == "GE", gene_id, rhs))
+    filter(rhs == "GE", op == "=~")
   return(res)
 }
 
@@ -166,8 +164,7 @@ subtract_ldsc_extended_pcs <- function(ldsc_output, number_of_components) {
   output<-usermodel(ldsc_output,estimation="DWLS",model=model)
   print(output)
   res <- output$results %>%
-    filter(rhs == "GE", op == "=~") %>%
-    mutate(rhs = if_else(rhs == "GE", gene_id, rhs))
+    filter(rhs == "GE", op == "=~")
   return(res)
 }
 
@@ -259,16 +256,6 @@ main <- function(argv = NULL) {
                      wld,
                      trait_names)
 
-  output <- subtract_ldsc_extended(ldsc_output)
-
-  res <- output$results %>%
-    filter(rhs == "GE") %>%
-    mutate(variance_explained = Unstand_Est^2 / ldsc_output$S[1,1],
-           rhs = if_else(rhs == "GE", gene_id, rhs))
-
-  fwrite(res, sprintf("results_%s.tsv", gene_id), sep="\t", quote=F, row.names=F, col.names=T)
-
-
   # Number of principal components
   cell_type_correlations <- cov2cor(ldsc_output$S[2:nrow(ldsc_output$S),2:ncol(ldsc_output$S)])
 
@@ -286,13 +273,13 @@ main <- function(argv = NULL) {
 
   uncorrelated <- c("Red_blood_cell_count", "Platelet_count", "Reticulocyte_count", "Eosinophil_count", "Basophil_count")
 
-  output_single <- subtract_ldsc_per_cell_type(ldsc_output)
-  output_def <- subtract_ldsc_extended(ldsc_output)
-  output_pruned <- subtract_ldsc_extended(ldsc_output, uncorrelated)
-  #output_pcs <- subtract_ldsc_extended_pcs(ldsc_output, number_of_principal_components)
+  res <- bind_rows(list(
+    "per_cell_type" = subtract_ldsc_per_cell_type(ldsc_output),
+    "all" = subtract_ldsc_extended(ldsc_output),
+    "pruned" = subtract_ldsc_extended(ldsc_output, uncorrelated)), .id = "analysis") %>%
+    mutate(rhs = if_else(rhs == "GE", gene_id, rhs))
 
-
-  fwrite(res, sprintf("component_results_%s.tsv", gene_id), sep="\t", quote=F, row.names=F, col.names=T)
+  fwrite(res, sprintf("results_%s.tsv", gene_id), sep="\t", quote=F, row.names=F, col.names=T)
 
 
   # ref <- args$ref
