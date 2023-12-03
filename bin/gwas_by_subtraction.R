@@ -77,29 +77,33 @@ subtract_ldsc_per_cell_type <- function(ldsc_output) {
 
   trait_names <- colnames(ldsc_output$S[,2:ncol(ldsc_output$S)])
 
-  res <- bind_rows(mapply(function(trait_name) {
-    latent_factor_name <- paste0("ctc_", trait_name)
+  res <- tryCatch({
+    bind_rows(mapply(function(trait_name) {
+      latent_factor_name <- paste0("ctc_", trait_name)
 
-    latent_factors <- paste0(sprintf("%s=~NA*GE + start(0.4)*%s", latent_factor_name , trait_name), collapse="\n")
-    ge_latent_factor <- "GeNonCtc=~NA*GE + start(0.2)*GE"
+      latent_factors <- paste0(sprintf("%s=~NA*GE + start(0.4)*%s", latent_factor_name , trait_name), collapse="\n")
+      ge_latent_factor <- "GeNonCtc=~NA*GE + start(0.2)*GE"
 
-    ge_non_ctc_dependency <- "GeNonCtc~~1*GeNonCtc"
+      ge_non_ctc_dependency <- "GeNonCtc~~1*GeNonCtc"
 
-    latent_factor_dependencies <- paste0(sprintf("%s~~1*%1$s\n%1$s~~0*GeNonCtc", latent_factor_name), collapse="\n")
-    trait_dependencies <- paste0(sprintf("%s~~0*%1$s\n%1$s~~0*GE", trait_name), collapse="\n")
+      latent_factor_dependencies <- paste0(sprintf("%s~~1*%1$s\n%1$s~~0*GeNonCtc", latent_factor_name), collapse="\n")
+      trait_dependencies <- paste0(sprintf("%s~~0*%1$s\n%1$s~~0*GE", trait_name), collapse="\n")
 
-    ge_dependency <- "GE~~0*GE"
+      ge_dependency <- "GE~~0*GE"
 
-    model <- paste(
-      latent_factors, ge_latent_factor, ge_non_ctc_dependency,
-      latent_factor_dependencies, trait_dependencies, ge_dependency, collapse="\n", sep="\n")
+      model <- paste(
+        latent_factors, ge_latent_factor, ge_non_ctc_dependency,
+        latent_factor_dependencies, trait_dependencies, ge_dependency, collapse="\n", sep="\n")
 
-    output <- usermodel(ldsc_output,estimation="DWLS",model=model)
-    res <- output$results %>%
-      filter(rhs == "GE", op == "=~") %>%
-      mutate(cell_type = trait_name) %>%
-      mutate(across(c(Unstand_Est, Unstand_SE, STD_Genotype, STD_Genotype_SE, STD_All, p_value), as.numeric))
-  }, trait_names, SIMPLIFY = F, USE.NAMES = F))
+      output <- usermodel(ldsc_output,estimation="DWLS",model=model)
+      res <- output$results %>%
+        filter(rhs == "GE", op == "=~") %>%
+        mutate(cell_type = trait_name) %>%
+        mutate(across(c(Unstand_Est, Unstand_SE, STD_Genotype, STD_Genotype_SE, STD_All, p_value), as.numeric))
+    }, trait_names, SIMPLIFY = F, USE.NAMES = F))
+  },
+    error = function(e) {NULL},
+    warning = function(e) {NULL})
 
   return(res)
 }
@@ -131,11 +135,15 @@ subtract_ldsc_extended <- function(ldsc_output, selection=NULL) {
 
   print(model)
 
-  output<-usermodel(ldsc_output,estimation="DWLS",model=model)
-  print(output)
-  res <- output$results %>%
+  res <- tryCatch({
+    output<-usermodel(ldsc_output,estimation="DWLS",model=model)
+
+    output$results %>%
     filter(rhs == "GE", op == "=~") %>%
     mutate(across(c(Unstand_Est, Unstand_SE, STD_Genotype, STD_Genotype_SE, STD_All, p_value), as.numeric))
+  },
+    error = function(e) {NULL},
+    warning = function(e) {NULL})
   return(res)
 }
 
