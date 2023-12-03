@@ -267,6 +267,11 @@ main <- function(argv = NULL) {
                      wld,
                      trait_names)
 
+  if (ldsc_output$S[1:1] <= 0) {
+    write.table("", sprintf("results_%s.tsv", gene_id))
+    return()
+  }
+
   # Number of principal components
   cell_type_correlations <- cov2cor(ldsc_output$S[2:nrow(ldsc_output$S),2:ncol(ldsc_output$S)])
 
