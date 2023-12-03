@@ -277,7 +277,7 @@ main <- function(argv = NULL) {
 
   cell_type_covariances <- ldsc_output$S[2:nrow(ldsc_output$S),2:ncol(ldsc_output$S)]
   rownames(cell_type_covariances) <- colnames(cell_type_covariances)
-  fwrite(cell_type_covariances, sprintf("results_cell_type_covariances.tsv"), sep="\t", quote=F, row.names=T, col.names=T)
+  #fwrite(cell_type_covariances, sprintf("results_cell_type_covariances.tsv"), sep="\t", quote=F, row.names=T, col.names=T)
 
   pca_out <- princomp(cell_type_correlations)
   print(summary(pca_out))
@@ -297,6 +297,8 @@ main <- function(argv = NULL) {
   if (!is.null(res_raw) & nrow(res_raw) > 0 & "rhs" %in% colnames(res_raw)) {
     res <- res_raw %>% mutate(rhs = if_else(rhs == "GE", gene_id, rhs))
     fwrite(res, sprintf("results_%s.tsv", gene_id), sep="\t", quote=F, row.names=F, col.names=T)
+  } else {
+    write.table("", sprintf("results_%s.tsv", gene_id))
   }
 
 
