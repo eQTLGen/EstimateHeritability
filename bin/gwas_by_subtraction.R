@@ -96,7 +96,7 @@ subtract_ldsc_per_cell_type <- function(ldsc_output) {
 
     output <- usermodel(ldsc_output,estimation="DWLS",model=model)
     res <- output$results %>%
-      filter(rhs == "GE", op = "=~") %>%
+      filter(rhs == "GE", op == "=~") %>%
       mutate(rhs = if_else(rhs == "GE", gene_id, rhs))
   }, trait_names, SIMPLIFY = F, USE.NAMES = F))
 
@@ -133,7 +133,7 @@ subtract_ldsc_extended <- function(ldsc_output, selection=NULL) {
   output<-usermodel(ldsc_output,estimation="DWLS",model=model)
   print(output)
   res <- output$results %>%
-    filter(rhs == "GE", op = "=~") %>%
+    filter(rhs == "GE", op == "=~") %>%
     mutate(rhs = if_else(rhs == "GE", gene_id, rhs))
   return(res)
 }
@@ -166,7 +166,7 @@ subtract_ldsc_extended_pcs <- function(ldsc_output, number_of_components) {
   output<-usermodel(ldsc_output,estimation="DWLS",model=model)
   print(output)
   res <- output$results %>%
-    filter(rhs == "GE", op = "=~") %>%
+    filter(rhs == "GE", op == "=~") %>%
     mutate(rhs = if_else(rhs == "GE", gene_id, rhs))
   return(res)
 }
