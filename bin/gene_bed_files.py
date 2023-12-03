@@ -120,17 +120,23 @@ def main(argv=None):
 
     assert np.alltrue(gene_dataframe.end > gene_dataframe.start)
 
+    # In the dataframe, add a column to indicate what the right boundary (downstream) is for the trans window,
+    # and what the left boundary (upstream) is for the trans window
     gene_dataframe["trans_downstream"] = gene_dataframe.end + 5*10**6
     gene_dataframe["trans_upstream"] = gene_dataframe.start - 5*10**6
 
+    # In the dataframe, add a column to indicate what the right boundary (downstream) is for the cis window,
+    # and what the left boundary (upstream) is for the cis window
     gene_dataframe["cis_downstream"] = gene_dataframe.end + 1*10**6
     gene_dataframe["cis_upstream"] = gene_dataframe.start - 1*10**6
 
+    # Fix the upstream, lower boundary for both cis and the trans window to a minimum of 0
     gene_dataframe.loc[gene_dataframe["cis_upstream"] < 0, "cis_upstream"] = 0
     gene_dataframe.loc[gene_dataframe["trans_upstream"] < 0, "trans_upstream"] = 0
 
     print(gene_dataframe)
 
+    # Output the boundaries.
     (gene_dataframe[["chromosome" , "trans_upstream", "trans_downstream", "gene_id"]]
      .to_csv("{}.trans.bed".format(args.out_prefix), sep="\t", index=False, header=False))
     (gene_dataframe[["chromosome" , "cis_upstream", "cis_downstream", "gene_id"]]
