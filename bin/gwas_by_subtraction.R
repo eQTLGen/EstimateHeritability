@@ -73,10 +73,44 @@ subtract_ext <- function() {
 
 }
 
-
-subtract_ldsc_extended <- function(ldsc_output) {
+subtract_ldsc_per_cell_type <- function(ldsc_output) {
 
   trait_names <- colnames(ldsc_output$S[,2:ncol(ldsc_output$S)])
+
+  res <- bind_rows(mapply(function(trait_name) {
+    latent_factor_name <- paste0("ctc_", trait_name)
+
+    latent_factors <- paste0(sprintf("%s=~NA*GE + start(0.4)*%s", latent_factor_name , trait_name), collapse="\n")
+    ge_latent_factor <- "GeNonCtc=~NA*GE + start(0.2)*GE"
+
+    ge_non_ctc_dependency <- "GeNonCtc~~1*GeNonCtc"
+
+    latent_factor_dependencies <- paste0(sprintf("%s~~1*%1$s\n%1$s~~0*GeNonCtc", latent_factor_name), collapse="\n")
+    trait_dependencies <- paste0(sprintf("%s~~0*%1$s\n%1$s~~0*GE", trait_name), collapse="\n")
+
+    ge_dependency <- "GE~~0*GE"
+
+    model <- paste(
+      latent_factors, ge_latent_factor, ge_non_ctc_dependency,
+      latent_factor_dependencies, trait_dependencies, ge_dependency, collapse="\n", sep="\n")
+
+    output <- usermodel(ldsc_output,estimation="DWLS",model=model)
+    res <- output$results %>%
+      filter(rhs == "GE", op = "=~") %>%
+      mutate(rhs = if_else(rhs == "GE", gene_id, rhs))
+  }, trait_names, SIMPLIFY = F, USE.NAMES = F))
+
+  return(res)
+}
+
+
+subtract_ldsc_extended <- function(ldsc_output, selection=NULl) {
+
+  trait_names <- colnames(ldsc_output$S[,2:ncol(ldsc_output$S)])
+
+  if (!is.null(selection)) {
+    trait_names <- selection
+  }
 
   latent_factor_names <- paste0("ctc_", trait_names)
 
@@ -97,7 +131,11 @@ subtract_ldsc_extended <- function(ldsc_output) {
   print(model)
 
   output<-usermodel(ldsc_output,estimation="DWLS",model=model)
-  return(output)
+  print(output)
+  res <- output$results %>%
+    filter(rhs == "GE", op = "=~") %>%
+    mutate(rhs = if_else(rhs == "GE", gene_id, rhs))
+  return(res)
 }
 
 subtract_ldsc_extended_pcs <- function(ldsc_output, number_of_components) {
@@ -127,7 +165,10 @@ subtract_ldsc_extended_pcs <- function(ldsc_output, number_of_components) {
 
   output<-usermodel(ldsc_output,estimation="DWLS",model=model)
   print(output)
-  return(output)
+  res <- output$results %>%
+    filter(rhs == "GE", op = "=~") %>%
+    mutate(rhs = if_else(rhs == "GE", gene_id, rhs))
+  return(res)
 }
 
 
@@ -238,13 +279,13 @@ main <- function(argv = NULL) {
   print(cumsum_result)
   number_of_principal_components <- sum(cumsum_result > 0.95)
 
-  output <- subtract_ldsc_extended_pcs(ldsc_output, number_of_principal_components)
+  uncorrelated <- c("Red_blood_cell_count", "Platelet_count", "Reticulocyte_count", "Eosinophil_count", "Basophil_count")
 
+  output_single <- subtract_ldsc_per_cell_type(ldsc_output)
+  output_def <- subtract_ldsc_extended(ldsc_output)
+  output_pruned <- subtract_ldsc_extended(ldsc_output, uncorrelated)
+  #output_pcs <- subtract_ldsc_extended_pcs(ldsc_output, number_of_principal_components)
 
-  res <- output$results %>%
-    filter(rhs == "GE") %>%
-    mutate(variance_explained = Unstand_Est^2 / ldsc_output$S[1,1],
-           rhs = if_else(rhs == "GE", gene_id, rhs))
 
   fwrite(res, sprintf("component_results_%s.tsv", gene_id), sep="\t", quote=F, row.names=F, col.names=T)
 
