@@ -104,7 +104,7 @@ subtract_ldsc_per_cell_type <- function(ldsc_output) {
 }
 
 
-subtract_ldsc_extended <- function(ldsc_output, selection=NULl) {
+subtract_ldsc_extended <- function(ldsc_output, selection=NULL) {
 
   trait_names <- colnames(ldsc_output$S[,2:ncol(ldsc_output$S)])
 
