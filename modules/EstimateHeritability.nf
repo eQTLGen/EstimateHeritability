@@ -215,6 +215,7 @@ process EstimateHeritabilityGenomicSem {
 }
 
 process GwasBySubtraction {
+    errorStrategy = 'ignore'
 
     input:
       tuple val(gene), val(annot), path(sumstats)

@@ -268,8 +268,7 @@ main <- function(argv = NULL) {
                      trait_names)
 
   if (ldsc_output$S[1:1] <= 0) {
-    write.table("", sprintf("results_%s.tsv", gene_id))
-    return()
+    stop("heritability under 0")
   }
 
   # Number of principal components
@@ -295,10 +294,11 @@ main <- function(argv = NULL) {
     "pruned" = subtract_ldsc_extended(ldsc_output, uncorrelated)), .id = "analysis")
 
   if (!is.null(res_raw) & nrow(res_raw) > 0 & "rhs" %in% colnames(res_raw)) {
-    res <- res_raw %>% mutate(rhs = if_else(rhs == "GE", gene_id, rhs))
+    res <- res_raw %>% mutate(rhs = if_else(rhs == "GE", gene_id, rhs)) %>%
+      mutate(variance_explained = Unstand_Est^2 / ldsc_output$S[1:1])
     fwrite(res, sprintf("results_%s.tsv", gene_id), sep="\t", quote=F, row.names=F, col.names=T)
   } else {
-    write.table("", sprintf("results_%s.tsv", gene_id))
+    stop("matrix singular?")
   }
 
 
