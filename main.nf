@@ -140,7 +140,7 @@ workflow {
     // }
 
     LoadResultsAnnotated(
-        input_parquet_ch, variant_reference_ch, variants_ch, gene_reference_ch, inclusion_step_output_ch, maf_table_ch,
+        input_parquet_ch, variant_reference_ch, variants_ch, gene_reference_ch, inclusion_step_output_ch,
         genes_buffered_ch, cohorts_ch.collect(), i_squared_threshold)
 
     results_ch = LoadResultsAnnotated.out.sumstats
@@ -153,25 +153,22 @@ workflow {
         .groupTuple()
         .view()
 
-    // Split summary statistics in cis and trans regions
-    // results_ch = ProcessResults(loci_extracted_ch, variant_reference_ch, gene_reference_ch, inclusion_step_output_ch, cohorts_ch.collect(), i_squared_threshold)
-
     // List number of variants per gene
-    LoadResultsAnnotated.out.variants
+    lead_effects_ch = LoadResultsAnnotated.out.variants
         .collectFile(keepHeader: true, skip: 1, name: "variants_per_gene.txt", storeDir: params.output)
 
-    //// Count the number of heritability variants for each gene
-    //heritability_snps_file_ch = CountHeritabilitySnps(gene_reference_ch, one_kg_bed_ch)
-//
-    //// Heritability SNPs
-    //heritability_snps = heritability_snps_file_ch.splitCsv(header:false, sep:' ')
+    // Count the number of heritability variants for each gene
+    // heritability_snps_file_ch = CountHeritabilitySnps(gene_reference_ch, lead_effects_ch, one_kg_bed_ch)
+
+    // Heritability SNPs
+    // heritability_snps = heritability_snps_file_ch.splitCsv(header:false, sep:' ')
     //    .flatten()
     //    .map { file ->
     //           def gene = file.name.toString().tokenize('.').get(2)
     //           def cis_trans_gw = file.name.toString().tokenize('.').get(3)
-    //           return tuple(gene, cis_trans_gw, file) }
+    //          return tuple(gene, cis_trans_gw, file) }
     //    .groupTuple()
-//
+
     //ldsc_in_ch = results_ch.join(heritability_snps, by:[0,1], remainder:false)
 //
     //// Process GWAS data

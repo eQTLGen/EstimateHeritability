@@ -37,10 +37,12 @@ process CountHeritabilitySnps {
 
     input:
       path geneReference
+      path filterBedFile
       path oneKgBedFiles
 
     output:
-      path "*_gen_annot_M_5_50.txt", emit: cis
+      path "*_gen_annot_M_5_50.txt"
+      path "*_gen_annot_M_5_50.txt"
 
     shell:
     '''
@@ -53,9 +55,15 @@ process CountHeritabilitySnps {
     # Calculate for every 1000genomes bed file how many variants are involved, and calculate the total.
     n_total=$(cat !{oneKgBedFiles} | wc -l | awk '{print $1}')
 
-    # For
+    # Perform intersection
     bedtools intersect -a "genes.cis.bed" -b !{oneKgBedFiles} | \
-        awk -F '\t' '{print $4}' | sort | uniq -c | sed 's/^ *//' > "cis_gen_annot_M_5_50.txt"
+        awk -F '\t' '{print $4}' | sort | uniq -c | sed 's/^ *//' > "cis_gw_gen_annot_M_5_50.txt"
+    bedtools intersect -a "genes.trans.bed" -b !{oneKgBedFiles} | \
+        awk -F '\t' '{print $4}' | sort | uniq -c | sed 's/^ *//' | awk -v tot=$n_total '{print (tot - $1),$2}' > "trans_gw_gen_annot_M_5_50.txt"
+    awk -v tot=$n_total '{print (tot),$2}' "trans_gen_annot_M_5_50.txt" > "gw_gw_gen_annot_M_5_50.txt"
+
+    bedtools intersect -a "genes.cis.bed" -b !{oneKgBedFiles} | \
+        awk -F '\t' '{print $4}' | sort | uniq -c | sed 's/^ *//' > "cis_pg_gen_annot_M_5_50.txt"
     bedtools intersect -a "genes.trans.bed" -b !{oneKgBedFiles} | \
         awk -F '\t' '{print $4}' | sort | uniq -c | sed 's/^ *//' | awk -v tot=$n_total '{print (tot - $1),$2}' > "trans_gen_annot_M_5_50.txt"
     awk -v tot=$n_total '{print (tot),$2}' "trans_gen_annot_M_5_50.txt" > "gw_gen_annot_M_5_50.txt"

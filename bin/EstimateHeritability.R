@@ -121,6 +121,27 @@ gene_i <- gsub(".*phenotype=", "", assoc_parquet)
 message(paste("Analysing", gene_i))
 gtf_f <- gtf[gtf$gene_id == gene_i, ]
 
+gtf_filtered <- gtf %>% filter(gene_id %in% genes)
+
+
+ds <- open_dataset("/gpfs/space/GI/eQTLGen/freeze2/eqtl_mapping/output/empirical_4GenPC20ExpPC_2023-10-05_PerGene/eqtls", partitioning = c("phenotype"))
+
+cis_snps <- list()
+
+for (gene_id in gtf_filtered$gene_id) {
+  chrom <- as.numeric(gtf_filtered[gtf_filtered$gene_id == "ENSG00000011021", "seqid", drop=T])
+  start <- as.numeric(gtf_filtered[gtf_filtered$gene_id == "ENSG00000011021", "start", drop=T])
+  end <- as.numeric(gtf_filtered[gtf_filtered$gene_id == "ENSG00000011021", "end", drop=T])
+
+  variants_of_interest <- ds %>% filter(phenotype == gene_id, chromosome == chrom) %>% collect() %>%
+    mutate(z_score = beta/standard_error,
+           p_value = ZtoP(z_score)) %>%
+    filter(p_value < 5e-8)
+
+  cis_snps[gene_id] <- variants_of_interest
+  print(gene_id)
+}
+
 # If gene is not in gtf, stop and write out empty files
 if (nrow(gtf_f) == 0){
   

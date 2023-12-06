@@ -121,7 +121,6 @@ process LoadResultsAnnotated {
         path variants
         path geneReference
         path inclusionDir
-        path mafTable
         val genes
         val cohorts
         val isqThreshold
@@ -153,7 +152,6 @@ process LoadResultsAnnotated {
             --input-file extracted.out.csv \
             --cohorts !{cohorts.join(' ')} \
             --inclusion-path !{inclusionDir} \
-            --maf-table !{mafTable} \
             --variant-reference !{variantReference} \
             !{variants_arg} \
             --gene-ref !{geneReference} \

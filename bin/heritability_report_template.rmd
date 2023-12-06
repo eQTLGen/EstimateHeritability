@@ -280,8 +280,8 @@ ggsave("covariances_violin_mr.pdf", p, width = 6, height = 6)
 
 ```{r}
 
-latent_factors_cis <- fread("latent_factors_cis.txt") %>% mutate(annot="cis")
-latent_factors_trans <- fread("latent_factors_trans.txt") %>% mutate(annot="trans")
+latent_factors_cis <- fread("latent_factors_cis_comp.txt") %>% mutate(annot="genome-wide")
+latent_factors_trans <- fread("latent_factors_trans_comp.txt") %>% mutate(annot="trans")
 
 merged_factors <- bind_rows(latent_factors_cis, latent_factors_trans) %>%
         filter(op == "=~") %>%
@@ -293,18 +293,79 @@ summarised_cell_type_factors <- merged_factors %>% filter(lhs != "GeNonCtc") %>%
 summarised_sign_cell_type_factors <- merged_factors %>% filter(lhs != "GeNonCtc") %>% filter(p_value < 0.05) %>% group_by(rhs, annot) %>%
         summarise(sum_of_ct_sign_explained_variance = sum(variance_explained))
 
+summarised_explained <- merged_factors %>%
+        filter(lhs == "GeNonCtc", analysis=="all") %>%
+        group_by(annot, marker_gene) %>%
+        summarise(variance_explained_mean = mean(variance_explained))
+
+ms4a1 <- merged_factors %>%
+        filter(analysis=="all", rhs=="ENSG00000156738", annot=="genome-wide") %>%
+        arrange(desc(variance_explained)) %>%
+        mutate(cell_type = ordered(lhs, lhs))
+
+p <- ggplot(ms4a1, aes(x=cell_type, y = variance_explained, fill = lhs == "GeNonCtc")) +
+        geom_col(stat='identity') +
+        coord_cartesian(ylim=c(0, 1.2)) +
+        theme(axis.text.x = element_text(angle=45, vjust=0.5, hjust=1))
+
+ggsave("explained_variance_ms4a1_h2_12-04_trans.pdf", p, width = 4, height = 4)
 
 
-filtered <- merged_factors %>% filter(lhs == "GeNonCtc")
+        filtered_pivot <- merged_factors %>%
+        filter(lhs == "GeNonCtc", analysis=="all") %>%
+        group_by(annot) %>%
+        mutate(rank = base::rank(variance_explained)) %>%
+        ungroup() %>%
+        rename(gene_expression = variance_explained) %>%
+        mutate(sum_of_cell_types = 1-gene_expression) %>%
+        pivot_longer(
+                cols=c("sum_of_cell_types", "gene_expression"),
+                values_to = "variance_explained",
+                names_to="type") %>%
+        mutate(MS4A1 = rhs=="ENSG00000156738")
 
-my_new_table <- tibble(h2_table_concat) %>% inner_join(filtered, by=c("gene_id"="rhs", "marker_gene", "annot")) %>%
-        left_join(summarised_cell_type_factors, by = c("gene_id"="rhs", "annot")) %>%
-        left_join(summarised_sign_cell_type_factors, by = c("gene_id"="rhs", "annot")) %>%
-        rename(sum_of_cell_types = sum_of_ct_explained_variance, gene_expression = variance_explained) %>%
-        rowwise() %>%
-        mutate(sum_of_variance_explained = sum(sum_of_cell_types, gene_expression, na.rm=T),
-               ratio_variance_explained_ge = gene_expression / sum_of_variance_explained) %>%
-        ungroup()
+
+p <- ggplot(filtered_pivot, aes(x=rank, y=variance_explained, fill=type, alpha=p_value<0.05)) +
+        geom_col(stat='identity', position = position_stack(reverse = TRUE)) +
+        scale_fill_manual(values=c("sum_of_cell_types"="grey70", "gene_expression"="#D55E00"), labels=c("Cell-type\ncomposition", "Gene\nexpression"))+
+        geom_point(data=. %>% filter(MS4A1)) +
+        geom_hline(data=summarised_explained, mapping=aes(yintercept=variance_explained_mean), inherit.aes=F) +
+        facet_wrap(vars(annot), nrow=2) +
+        theme(legend.position = "bottom")
+
+ggsave("explained_variance_bars_onesum_h2_12-04_trans.pdf", p, width = 5, height = 4)
+
+
+filtered_pivot <- merged_factors %>%
+        filter(lhs == "GeNonCtc", analysis=="all") %>%
+        group_by(annot,marker_gene) %>%
+        mutate(rank = base::rank(variance_explained)) %>%
+        ungroup() %>%
+        rename(gene_expression = variance_explained) %>%
+        mutate(sum_of_cell_types = 1-gene_expression) %>%
+        pivot_longer(
+                cols=c("sum_of_cell_types", "gene_expression"),
+                values_to = "variance_explained",
+                names_to="type") %>%
+        mutate(MS4A1 = rhs=="ENSG00000156738")
+
+
+p <- ggplot(filtered_pivot, aes(x=rank, y=variance_explained, fill=type, alpha=p_value<0.05)) +
+        geom_col(stat='identity', position = position_stack(reverse = TRUE)) +
+        scale_fill_manual(values=c("sum_of_cell_types"="grey70", "gene_expression"="#D55E00"), labels=c("Cell-type\ncomposition", "Gene\nexpression"))+
+        geom_point(data=. %>% filter(MS4A1)) +
+        geom_hline(data=summarised_explained, mapping=aes(yintercept=variance_explained_mean), inherit.aes=F) +
+        facet_wrap(vars(annot, marker_gene), nrow=2) +
+        theme(legend.position = "bottom")
+
+ggsave("explained_variance_bars_onesum_h2_12-04_marker.pdf", p, width = 5, height = 4)
+
+
+filtered <- merged_factors %>%
+        filter(lhs == "GeNonCtc", analysis=="all")
+
+
+my_new_table <- tibble(h2_table_concat) %>% inner_join(filtered, by=c("gene_id"="rhs", "marker_gene", "annot"))
 
 pivotted_table <- my_new_table %>%
         group_by(annot) %>%
@@ -326,9 +387,9 @@ p <- ggplot(pivotted_table, aes(x=rank, y=variance_explained, fill=type, alpha=p
         facet_wrap(vars(annot), nrow=2)
 ggsave("explained_variance_bars_dodge_h2_11-28_trans.pdf", p, width = 4, height = 4)
 
-p <- ggplot(my_new_table, aes(h2_obs, ratio_variance_explained_ge, colour = marker_gene, alpha = -log10(p_value))) +
+p <- ggplot(my_new_table, aes(h2_obs, variance_explained, colour = marker_gene, alpha = -log10(p_value))) +
         geom_point() + facet_wrap(vars(annot), nrow=2)
-ggsave("explained_variance_ratio_h2_11-28_trans.pdf", p, width = 4, height = 4)
+ggsave("explained_variance_ratio_h2_12-04_trans.pdf", p, width = 4, height = 4)
 
 p <- ggplot(my_new_table, aes(x=marker_gene, y=ratio_variance_explained_ge, fill = -log10(p_value))) +
         geom_violin() + facet_wrap(vars(annot), nrow=2)

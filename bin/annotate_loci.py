@@ -261,9 +261,7 @@ def main(argv=None):
     parser.add_argument('--out-prefix', dest='out_prefix', required=True,
                         help='Prefix to use for output file names')
     parser.add_argument('--cohorts', dest='cohorts', required=True, nargs='+',
-                            help='Names of cohorts used in the meta-analysis')
-    parser.add_argument('--maf-table', dest='maf', required=True,
-                        help='Path to the table containing minor allele frequencies')
+                        help='Names of cohorts used in the meta-analysis')
     parser.add_argument('-v', '--variants', required = False, default = None, nargs = '+',
                         help="""Individual SNP IDs specified and separated by space.""")
     parser.add_argument('-V', '--variants-file', required = False, default = None,
@@ -288,24 +286,7 @@ def main(argv=None):
 
     variant_list = load_variant_list(args)
 
-    print("Loading minor allele frequencies from '{}'".format(args.maf))
-
-    maf_dataframe = load_allele_frequencies(args, variant_reference)
-
-    print("Minor allele frequencies loaded:")
-    print(maf_dataframe.head())
-
     cohorts = np.array(args.cohorts)
-
-    print("Initiating MAF calculator...")
-
-    maf_calculator = MafCalculator(
-        inclusion_path=args.inclusion_path,
-        cohorts=cohorts,
-        maf_table=maf_dataframe,
-        flipped=maf_dataframe["flipped"])
-
-    print("MAF calculator initiated!")
 
     print("Loading gene annotations from '{}'".format(args.gene_ref))
 
@@ -316,7 +297,7 @@ def main(argv=None):
 
     overview_df = pd.read_table(os.path.join(args.inclusion_path, "filter_logs.log"), index_col=False)
     overview_df.set_index('Dataset', inplace=True)
-    total_sample_size = overview_df.loc[np.array(args.cohorts), "N"].sum()
+    total_sample_size = overview_df.loc[cohorts, "N"].sum()
 
     eqtls = pd.read_csv(args.input_file, sep='\t')
 
@@ -385,13 +366,6 @@ def main(argv=None):
     lead_effects = (
         eqtls_annotated
         .groupby("phenotype", group_keys=False).apply(lambda x: clumper.identify_lead_snps(x)))
-
-    maf = maf_calculator.calculate_maf(lead_effects[['variant', 'phenotype']])
-    lead_effects['allele_eff_freq'] = maf.values
-
-    lead_effects['variance_explained'] = (
-           2 * lead_effects['allele_eff_freq'] * (1 - lead_effects['allele_eff_freq'])
-           * np.power(lead_effects['beta'], 2))
 
     polygenic = (
         eqtls_annotated
