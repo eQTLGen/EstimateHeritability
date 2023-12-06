@@ -413,7 +413,7 @@ def main(argv=None):
         out.loc[common].to_csv("{}.sumstats.gw_polygenic.csv.gz".format(args.out_prefix), sep="\t", index=False)
 
     # output lead effects
-    lead_effects.to_csv("{}.lead_effects.csv.gz".format(args.out_prefix), sep="\t", index=False)
+    lead_effects.to_csv("{}.lead_effects.csv".format(args.out_prefix), sep="\t", index=False)
     return 0
 
 
