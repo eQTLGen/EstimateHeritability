@@ -126,9 +126,9 @@ process LoadResultsAnnotated {
         val isqThreshold
 
     output:
-        path "annotated.*.sumstats.*.csv.gz", emit: sumstats, optional:true
-        path "annotated.*.lead_effects.csv.gz", emit: leads, optional:true
-        path "annotated.*.passed_variants.csv", emit: variants, optional:true
+        path "*.sumstats.*.csv.gz", emit: sumstats, optional:true
+        path "*.lead_effects.csv.gz", emit: leads
+        path "*.passed_variants.csv", emit: variants
 
     shell:
         variants_arg = (variants.name != 'NO_FILE') ? "--variants-file ${variants}" : ""
