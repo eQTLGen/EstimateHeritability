@@ -334,11 +334,21 @@ def main(argv=None):
     n_variants_unfiltered = eqtls.groupby("phenotype").size()
     n_variants_filtered = eqtls_filtered.groupby("phenotype").size()
 
-    genes_failed = n_variants_filtered.index[n_variants_unfiltered * 0.5 > n_variants_filtered].values
+    n_variants = pd.concat(
+        [n_variants_unfiltered, n_variants_filtered],
+        keys=['unfiltered', 'filtered'], axis=1)
+
+    n_variants["failed"] = np.logical_or(
+        np.isnan(n_variants.filtered),
+        n_variants.filtered < n_variants.unfiltered * 0.5)
+
+    genes_failed = n_variants.loc[n_variants.failed].index
     eqtls_genes_filtered = eqtls_filtered[~eqtls_filtered.phenotype.isin(genes_failed)]
 
     print("For {} out of {} genes, the number of filtered variants is under 50% of the number of input variants"
           .format(len(genes_failed), len(n_variants_unfiltered)))
+    if len(genes_failed) > 0:
+        print("Genes failed:\n", "\n".join(genes_failed))
 
     if eqtls_genes_filtered.shape[0] < 0:
         print("No genes left!")
@@ -350,7 +360,7 @@ def main(argv=None):
         eqtls_genes_filtered.set_index(["variant", "phenotype"])
         .merge(variant_reference.set_index("variant"), how="inner", validate="m:1", left_index=True, right_index=True)
         .merge(gene_dataframe.rename(columns={'gene_id': 'phenotype'},).set_index("phenotype"), how="inner", left_index=True, right_index=True,
-               suffixes=('', '_gene'), validate="m:1"))
+               suffixes=('', '_gene'), validate="m:1")).reset_index()
 
     clumper = Clumper(p_threshold=5e-8, window=1000000)
     lead_effects = (
