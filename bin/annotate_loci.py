@@ -169,44 +169,34 @@ class Clumper:
     def __init__(self, p_threshold=5e-8, window=1000000):
         self.p_threshold = p_threshold
         self.window = window
-
     def identify_lead_snps(self, eqtls_annotated):
         p_threshold = self.p_threshold
         window = self.window
         data_filtered = eqtls_annotated.loc[eqtls_annotated['p_value'] < p_threshold]
-
         # Iteratively identify most significant SNP, and remove all other SNPs in the window
         res = list()
-
         while data_filtered.shape[0] > 0:
             lead_snp = data_filtered.loc[data_filtered['p_value'].idxmin()]
             res.append(lead_snp)
-
             data_filtered = data_filtered[~(
                     (data_filtered['chromosome_variant'] == lead_snp['chromosome_variant']) &
                     (data_filtered['bp_variant'] > lead_snp['bp_variant'] - window) &
                     (data_filtered['bp_variant'] < lead_snp['bp_variant'] + window))]
-
         res_df = pd.DataFrame(res)
         return res_df
-
     def filter_significant_effects(self, eqtls_annotated):
         p_threshold = self.p_threshold
         window = self.window
         data_filtered = pd.DataFrame(eqtls_annotated)
-
         # Iteratively identify most significant SNP, and remove all other SNPs in the window
         res = list()
-
         while data_filtered['p_value'].min() < p_threshold:
             lead_snp = data_filtered.loc[data_filtered['p_value'].idxmin()]
             res.append(lead_snp)
-
             data_filtered = data_filtered[~(
                     (data_filtered['chromosome_variant'] == lead_snp['chromosome_variant']) &
                     (data_filtered['bp_variant'] > lead_snp['bp_variant'] - window) &
                     (data_filtered['bp_variant'] < lead_snp['bp_variant'] + window))]
-
         print(pd.DataFrame(res))
         print(data_filtered.shape[0])
         return data_filtered
@@ -357,9 +347,9 @@ def main(argv=None):
 
     # Perform method
     eqtls_annotated = (
-        eqtls_genes_filtered
-        .merge(variant_reference, how="inner", on="variant", validate="m:1")
-        .merge(gene_dataframe, how="inner", left_on="phenotype", right_on="gene_id",
+        eqtls_genes_filtered.set_index(["variant", "phenotype"])
+        .merge(variant_reference.set_index("variant"), how="inner", validate="m:1", left_index=True, right_index=True)
+        .merge(gene_dataframe.rename(columns={'gene_id': 'phenotype'},).set_index("phenotype"), how="inner", left_index=True, right_index=True,
                suffixes=('', '_gene'), validate="m:1"))
 
     clumper = Clumper(p_threshold=5e-8, window=1000000)
@@ -405,10 +395,10 @@ def main(argv=None):
         out.to_csv("{}.sumstats.gw_all.csv.gz".format(args.out_prefix), sep="\t", index=False)
 
     # output polygenic signal only
-    if out.loc[cis.loc[common]].shape[0] > 0:
-        out.loc[cis.loc[common]].to_csv("{}.sumstats.cis_polygenic.csv.gz".format(args.out_prefix), sep="\t", index=False)
-    if out.loc[trans.loc[common]].shape[0] > 0:
-        out.loc[trans.loc[common]].to_csv("{}.sumstats.trans_polygenic.csv.gz".format(args.out_prefix), sep="\t", index=False)
+    if out.loc[common].loc[cis.loc[common]].shape[0] > 0:
+        out.loc[common].loc[cis.loc[common]].to_csv("{}.sumstats.cis_polygenic.csv.gz".format(args.out_prefix), sep="\t", index=False)
+    if out.loc[common].loc[trans.loc[common]].shape[0] > 0:
+        out.loc[common].loc[trans.loc[common]].to_csv("{}.sumstats.trans_polygenic.csv.gz".format(args.out_prefix), sep="\t", index=False)
     if out.loc[common].shape[0] > 0:
         out.loc[common].to_csv("{}.sumstats.gw_polygenic.csv.gz".format(args.out_prefix), sep="\t", index=False)
 
