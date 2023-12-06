@@ -52,6 +52,8 @@ process CountHeritabilitySnps {
         --gene-ref !{geneReference} \
         --out-prefix genes
 
+    filterBedFile
+
     # Calculate for every 1000genomes bed file how many variants are involved, and calculate the total.
     n_total=$(cat !{oneKgBedFiles} | wc -l | awk '{print $1}')
 

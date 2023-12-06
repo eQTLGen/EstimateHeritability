@@ -154,8 +154,12 @@ workflow {
         .view()
 
     // List number of variants per gene
-    lead_effects_ch = LoadResultsAnnotated.out.variants
+    number_of_passed_variants = LoadResultsAnnotated.out.variants
         .collectFile(keepHeader: true, skip: 1, name: "variants_per_gene.txt", storeDir: params.output)
+
+    // List number of variants per gene
+    lead_effects_ch = LoadResultsAnnotated.out.leads
+        .collectFile(keepHeader: true, skip: 1, name: "lead_effect_variants.txt", storeDir: params.output)
 
     // Count the number of heritability variants for each gene
     // heritability_snps_file_ch = CountHeritabilitySnps(gene_reference_ch, lead_effects_ch, one_kg_bed_ch)
