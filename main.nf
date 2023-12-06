@@ -151,7 +151,6 @@ workflow {
                def cis_trans_gw = annot.tokenize('_').get(0)
                return tuple(gene, cis_trans_gw, annot, file) }
         .groupTuple()
-        .view()
 
     // List number of variants per gene
     number_of_passed_variants = LoadResultsAnnotated.out.variants
