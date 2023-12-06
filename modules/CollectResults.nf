@@ -127,7 +127,7 @@ process LoadResultsAnnotated {
 
     output:
         path "*.sumstats.*.csv.gz", emit: sumstats, optional:true
-        path "*.lead_effects.csv.gz", emit: leads
+        path "*.lead_effects.csv", emit: leads
         path "*.passed_variants.csv", emit: variants
 
     shell:
