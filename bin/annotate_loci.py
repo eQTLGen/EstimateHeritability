@@ -327,7 +327,7 @@ def main(argv=None):
     (pd.DataFrame({"n_passed_variants": n_passed_variants,
                   "n_failed_variants": n_failed_variants},
                   index = np.array(["i_squared", "sample_size", "overall", "gene"]))
-        .to_csv("{}_passed_variants.csv".format(args.out_prefix), sep="\t", index=True, index_label="class"))
+        .to_csv("{}.passed_variants.csv".format(args.out_prefix), sep="\t", index=True, index_label="class"))
 
     # For each gene, check what the number of variants are. If it is lower than
 
@@ -414,7 +414,7 @@ def main(argv=None):
 
     # output lead effects
     if lead_effects.shape[0] > 0:
-        lead_effects.to_csv("{}_lead_effects.csv.gz".format(args.out_prefix), sep="\t", index=False)
+        lead_effects.to_csv("{}.lead_effects.csv.gz".format(args.out_prefix), sep="\t", index=False)
     return 0
 
 
