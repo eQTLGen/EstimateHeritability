@@ -384,6 +384,10 @@ def main(argv=None):
         confined.chromosome_variant == confined.chromosome_gene,
         np.logical_and(confined.start - cis_window_flank_size < confined.bp_variant,
                        confined.end + cis_window_flank_size > confined.bp_variant))
+    lead_effects["cis"] = np.logical_and(
+        lead_effects.chromosome_variant == lead_effects.chromosome_gene,
+        np.logical_and(lead_effects.start - cis_window_flank_size < lead_effects.bp_variant,
+                       lead_effects.end + cis_window_flank_size > lead_effects.bp_variant))
 
     # Trans effects
     trans = ~np.logical_and(
