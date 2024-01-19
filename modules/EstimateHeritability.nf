@@ -108,6 +108,7 @@ process EstimateCisHeritabilityLdsc {
     --chisq-max 10000 \
     --M !{m_5_50} \
     --out !{gene}_h2 \
+    --intercept-h2 1
 
     #/ldsc/ldsc.py \
     #--rg !{sumstats},!{gwas.join(",")} \

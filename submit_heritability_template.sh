@@ -34,6 +34,7 @@ variants="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/EstimateHer
 hapmap="/gpfs/space/GI/eQTLGen/public_data/ldsc/w_hm3.snplist"
 
 gwas_map="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/EstimateHeritability/gwas_studies_map.csv"
+maf_table="/gpfs/space/GI/eQTLGen/freeze2/PreMetaQc/output/MafInformation_2023-10-03.txt.gz"
 
 output_folder="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPCNoExpPC_2023-07-13"
 
@@ -53,6 +54,7 @@ NXF_VER=21.10.6 ${nextflow_path}/nextflow run main.nf \
 --gwas_map ${gwas_map} \
 --ldsc_source ${ldsc_sources} \
 --inclusion_step_output ${inclusion_step_output} \
+--maf_table ${maf_table} \
 -resume \
 -profile slurm,singularity
 
