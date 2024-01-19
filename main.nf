@@ -86,6 +86,8 @@ i_squared_threshold = 100
 onekg_gwas_by_subtraction_reference = Channel.fromPath("data/reference.1000G.maf.0.005.txt.gz").collect()
 
 ld_ch = Channel.fromPath(params.ld_w_dir, type: 'dir').collect()
+frqfile_ch = Channel.fromPath(params.frqfile_dir, type: 'dir').collect()
+weights_ch = Channel.fromPath(params.weights_dir, type: 'dir').collect()
 
 gene_chunk_size=1
 
@@ -164,13 +166,13 @@ workflow {
 
     // Run Heritability estimates
     ldsc_cis_output_ch = EstimateCisHeritabilityLdsc(
-        ldsc_cis_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
+        ldsc_cis_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch, frqfile_ch, weights_ch)
 
     ldsc_trans_output_ch = EstimateTransHeritabilityLdsc(
-        ldsc_trans_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
+        ldsc_trans_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch, frqfile_ch, weights_ch)
 
     ldsc_gw_output_ch = EstimateGwHeritabilityLdsc(
-        ldsc_gw_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
+        ldsc_gw_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch, frqfile_ch, weights_ch)
 
     EstimateHeritabilityLdscAllPairwise(
         process_gwas_ch.map { name, gws, file -> name }.collect(),
