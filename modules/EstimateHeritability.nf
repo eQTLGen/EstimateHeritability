@@ -103,11 +103,15 @@ process EstimateCisHeritabilityLdsc {
     '''
     /ldsc/ldsc.py \
     --h2 !{sumstats} \
-    --ref-ld-chr !{ld_ch}/ \
-    --w-ld-chr !{ld_ch}/ \
+    --ref-ld-chr !{ld_ch}/baseline. \
+    --frqfile-chr !{frqfile_ch}/1000G.mac5eur. \
+    --w-ld-chr !{weights_ch}/weights. \
     --chisq-max 10000 \
     --M !{m_5_50} \
-    --out !{gene}_h2 \
+    --out !{gene}_baselineLD_h2 \
+    --overlap-annot \
+    --print-coefficients \
+    --print-delete-vals
 
     #/ldsc/ldsc.py \
     #--rg !{sumstats},!{gwas.join(",")} \
@@ -131,6 +135,8 @@ process EstimateTransHeritabilityLdsc {
       tuple val(gene), val(annot), path(sumstats), val(m_5_50)
       path gwas
       path ld_ch
+      path frqfile_ch
+      path weights_ch
 
     output:
       tuple val(gene), val(annot), path('*_h2.log'), path('*_h2.delete')
@@ -139,11 +145,14 @@ process EstimateTransHeritabilityLdsc {
     '''
     /ldsc/ldsc.py \
     --h2 !{sumstats} \
-    --ref-ld-chr !{ld_ch}/ \
-    --w-ld-chr !{ld_ch}/ \
+    --ref-ld-chr !{ld_ch}/baseline. \
+    --frqfile-chr !{frqfile_ch}/1000G.mac5eur. \
+    --w-ld-chr !{weights_ch}/weights. \
     --chisq-max 10000 \
     --M !{m_5_50} \
-    --out !{gene}_h2 \
+    --out !{gene}_baselineLD_h2 \
+    --overlap-annot \
+    --print-coefficients \
     --print-delete-vals
 
     #/ldsc/ldsc.py \
