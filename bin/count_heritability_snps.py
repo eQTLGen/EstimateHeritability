@@ -164,10 +164,11 @@ def main(argv=None):
         for gene, grouped in gene_dataframe.groupby("gene_id"):
             # Get the rows from merged_annot_frq that do overlap with
             merged = pd.merge(frq_file, grouped, left_on="CHR", right_on="chromosome")
-            # Keep the rows that are in the window
+            # Get list of unique SNPs that are in the cis window
             snps_in_window_cis = merged.loc[
                 np.logical_and(merged.BP > merged.cis_upstream,
                 merged.BP < merged.cis_downstream)].SNP.drop_duplicates()
+            # Get list of unique SNPs that are in the trans window
             snps_in_window_trans = merged.loc[
                 np.logical_and(merged.BP > merged.trans_upstream,
                                merged.BP < merged.trans_downstream)].SNP.drop_duplicates()
