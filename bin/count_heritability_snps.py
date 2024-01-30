@@ -189,8 +189,8 @@ def main(argv=None):
     heritability_snps_in = pd.DataFrame({gene: pd.concat(sums) for gene, sums in partial_m_keep.items() if len(sums) > 1})
     heritability_snps_out = pd.DataFrame({gene: pd.concat(sums) for gene, sums in partial_m_remove.items() if len(sums) > 1})
 
-    heritability_snps_out.T.map(str).agg(','.join, axis=1).to_csv("{}_trans_gen_annot_M_5_50.txt", sep="\t")
-    heritability_snps_in.T.map(str).agg(','.join, axis=1).to_csv("{}_cis_gen_annot_M_5_50.txt", sep="\t")
+    heritability_snps_out.T.map(str).agg(','.join, axis=1).to_csv("{}.trans_gen_annot_M_5_50.txt", sep="\t")
+    heritability_snps_in.T.map(str).agg(','.join, axis=1).to_csv("{}.cis_gen_annot_M_5_50.txt", sep="\t")
 
     return 0
 

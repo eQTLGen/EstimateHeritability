@@ -42,9 +42,8 @@ process CountHeritabilitySnps {
       path frqfile_ch
 
     output:
-        path "counts_cis_gen_annot_M_5_50.txt", emit: cis
-        path "counts_trans_gen_annot_M_5_50.txt", emit: trans
-        path "counts_gw_gen_annot_M_5_50.txt", emit: gw
+        path "counts.cis_gen_annot_M_5_50.txt", emit: cis
+        path "counts.trans_gen_annot_M_5_50.txt", emit: trans
 
     shell:
     '''
