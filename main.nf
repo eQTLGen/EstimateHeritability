@@ -147,22 +147,19 @@ workflow {
         .collectFile(keepHeader: true, skip: 1, name: "variants_per_gene.txt", storeDir: params.output)
 
     // Count the number of heritability variants for each gene
-    heritability_snps_file_ch = CountHeritabilitySnps(gene_reference_ch, one_kg_bed_ch)
+    heritability_snps_file_ch = CountHeritabilitySnps(gene_reference_ch, ld_ch, frqfile_ch)
 
     // Heritability SNPs
     heritability_snps_cis = heritability_snps_file_ch.cis.splitCsv(header:false, sep:' ')
-        .map { row -> tuple(row[1], "cis", row[0]) }
+        .map { row -> tuple(row[0], "cis", row[1]) }
     heritability_snps_trans = heritability_snps_file_ch.trans.splitCsv(header:false, sep:' ')
-        .map { row -> tuple(row[1], "trans", row[0]) }
-    heritability_snps_gw = heritability_snps_file_ch.gw.splitCsv(header:false, sep:' ')
-        .map { row -> tuple(row[1], "gw", row[0]) }
+        .map { row -> tuple(row[0], "trans", row[1]) }
 
     ldsc_cis_in_ch = results_ch.cis.join(heritability_snps_cis, by:[0,1], remainder:false)
     ldsc_trans_in_ch = results_ch.trans.join(heritability_snps_trans, by:[0,1], remainder:false)
-    ldsc_gw_in_ch = results_ch.gw.join(heritability_snps_gw, by:[0,1], remainder:false)
 
     // Process GWAS data
-    process_gwas_ch = ProcessVuckovicGwasData(gwas_input_ch, hapmap_ch)
+    // process_gwas_ch = ProcessVuckovicGwasData(gwas_input_ch, hapmap_ch)
 
     // Run Heritability estimates
     ldsc_cis_output_ch = EstimateCisHeritabilityLdsc(
@@ -171,8 +168,8 @@ workflow {
     ldsc_trans_output_ch = EstimateTransHeritabilityLdsc(
         ldsc_trans_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch, frqfile_ch, weights_ch)
 
-    ldsc_gw_output_ch = EstimateGwHeritabilityLdsc(
-        ldsc_gw_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch, frqfile_ch, weights_ch)
+    // ldsc_gw_output_ch = EstimateGwHeritabilityLdsc(
+    //     ldsc_gw_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch, frqfile_ch, weights_ch)
 
     //EstimateHeritabilityLdscAllPairwise(
     //    process_gwas_ch.map { name, gws, file -> name }.collect(),
@@ -198,8 +195,8 @@ workflow {
         .collectFile(name:'ldsc_table_cis.txt', skip: 1, keepHeader: true, storeDir: params.output)
     ldsc_trans_matrices_ch = ProcessTransLdscOutput(ldsc_trans_output_ch)
         .collectFile(name:'ldsc_table_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
-    ldsc_gw_matrices_ch = ProcessGwLdscOutput(ldsc_gw_output_ch)
-        .collectFile(name:'ldsc_table_gw.txt', skip: 1, keepHeader: true, storeDir: params.output)
+    // ldsc_gw_matrices_ch = ProcessGwLdscOutput(ldsc_gw_output_ch)
+    //    .collectFile(name:'ldsc_table_gw.txt', skip: 1, keepHeader: true, storeDir: params.output)
 
     // Process LDSC stuff
     ProcessLdscDeleteVals(
