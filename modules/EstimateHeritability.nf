@@ -33,6 +33,30 @@ process EstimateHeritability {
     '''
 }
 
+
+process CountHeritabilitySnps {
+
+    input:
+      path geneReference
+      path ld_ch
+      path frqfile_ch
+
+    output:
+        path "counts_cis_gen_annot_M_5_50.txt", emit: cis
+        path "counts_trans_gen_annot_M_5_50.txt", emit: trans
+        path "counts_gw_gen_annot_M_5_50.txt", emit: gw
+
+    shell:
+    '''
+    count_heritability_snps.py \
+        --gene-ref !{geneReference} \
+        --annot-chr !{ld_ch}/baselineLD.
+        --frqfile-chr !{frqfile_ch}/1000G.EUR.hg38.
+        --out-prefix counts
+    '''
+}
+
+
 process CountHeritabilitySnps {
 
     input:
