@@ -174,24 +174,24 @@ workflow {
     ldsc_gw_output_ch = EstimateGwHeritabilityLdsc(
         ldsc_gw_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch, frqfile_ch, weights_ch)
 
-    EstimateHeritabilityLdscAllPairwise(
-        process_gwas_ch.map { name, gws, file -> name }.collect(),
-        process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
+    //EstimateHeritabilityLdscAllPairwise(
+    //    process_gwas_ch.map { name, gws, file -> name }.collect(),
+    //    process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch)
 
-    GwasBySubtraction(
-        ldsc_gw_in_ch,
-        gwas_input_ch.map { name, gws, n -> gws }.collect(),
-        process_gwas_ch.map { name, gws, file -> name }.collect(),
-        process_gwas_ch.map { name, gws, file -> file }.collect(),
-        ld_ch, onekg_gwas_by_subtraction_reference)
-        .collectFile(name:'latent_factors_cis_comp.txt', skip: 1, keepHeader: true, storeDir: params.output)
-    GwasBySubtractionTrans(
-        ldsc_trans_in_ch,
-        gwas_input_ch.map { name, gws, n -> gws }.collect(),
-        process_gwas_ch.map { name, gws, file -> name }.collect(),
-        process_gwas_ch.map { name, gws, file -> file }.collect(),
-        ld_ch, onekg_gwas_by_subtraction_reference)
-        .collectFile(name:'latent_factors_trans_comp.txt', skip: 1, keepHeader: true, storeDir: params.output)
+    //GwasBySubtraction(
+    //    ldsc_gw_in_ch,
+    //    gwas_input_ch.map { name, gws, n -> gws }.collect(),
+    //    process_gwas_ch.map { name, gws, file -> name }.collect(),
+    //    process_gwas_ch.map { name, gws, file -> file }.collect(),
+    //    ld_ch, onekg_gwas_by_subtraction_reference)
+    //    .collectFile(name:'latent_factors_cis_comp.txt', skip: 1, keepHeader: true, storeDir: params.output)
+    //GwasBySubtractionTrans(
+    //    ldsc_trans_in_ch,
+    //    gwas_input_ch.map { name, gws, n -> gws }.collect(),
+    //    process_gwas_ch.map { name, gws, file -> name }.collect(),
+    //    process_gwas_ch.map { name, gws, file -> file }.collect(),
+    //    ld_ch, onekg_gwas_by_subtraction_reference)
+    //    .collectFile(name:'latent_factors_trans_comp.txt', skip: 1, keepHeader: true, storeDir: params.output)
 
     // Process LDSC logs
     ldsc_cis_matrices_ch = ProcessCisLdscOutput(ldsc_cis_output_ch)

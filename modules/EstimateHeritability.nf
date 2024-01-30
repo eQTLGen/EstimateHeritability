@@ -95,6 +95,8 @@ process EstimateCisHeritabilityLdsc {
       tuple val(gene), val(annot), path(sumstats), val(m_5_50)
       path gwas
       path ld_ch
+      path frqfile_ch
+      path weights_ch
 
     output:
       tuple val(gene), val(annot), path('*_h2.log')
@@ -103,9 +105,9 @@ process EstimateCisHeritabilityLdsc {
     '''
     /ldsc/ldsc.py \
     --h2 !{sumstats} \
-    --ref-ld-chr !{ld_ch}/baseline. \
-    --frqfile-chr !{frqfile_ch}/1000G.mac5eur. \
-    --w-ld-chr !{weights_ch}/weights. \
+    --ref-ld-chr !{ld_ch}/baselineLD. \
+    --frqfile-chr !{frqfile_ch}/1000G.EUR.hg38. \
+    --w-ld-chr !{weights_ch}/weights.hm3_noMHC. \
     --chisq-max 10000 \
     --M !{m_5_50} \
     --out !{gene}_baselineLD_h2 \
@@ -145,9 +147,9 @@ process EstimateTransHeritabilityLdsc {
     '''
     /ldsc/ldsc.py \
     --h2 !{sumstats} \
-    --ref-ld-chr !{ld_ch}/baseline. \
-    --frqfile-chr !{frqfile_ch}/1000G.mac5eur. \
-    --w-ld-chr !{weights_ch}/weights. \
+    --ref-ld-chr !{ld_ch}/baselineLD. \
+    --frqfile-chr !{frqfile_ch}/1000G.EUR.hg38. \
+    --w-ld-chr !{weights_ch}/weights.hm3_noMHC. \
     --chisq-max 10000 \
     --M !{m_5_50} \
     --out !{gene}_baselineLD_h2 \
