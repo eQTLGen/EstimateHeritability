@@ -120,7 +120,7 @@ def main(argv=None):
     print("Loading gene annotations from '{}'".format(args.gene_ref))
 
     gencode_parser = GtfParser(args.gene_ref)
-    gene_dataframe = gencode_parser.df
+    gene_dataframe = gencode_parser.df.copy()
 
     assert np.alltrue(gene_dataframe.end > gene_dataframe.start)
 
@@ -150,28 +150,47 @@ def main(argv=None):
     (cis_gene_dataframe
      .to_csv("{}.cis.bed".format(args.out_prefix), sep="\t", index=False, header=False))
 
+    partial_m_keep = {gene:list() for gene, grouped in gencode_parser.df.groupby("gene_id")}
+    partial_m_remove = {gene:list() for gene, grouped in gencode_parser.df.groupby("gene_id")}
+
     for chrom in range(1, 22):
-        frq_file = pd.read_csv("{}.{}.frq".format(args.frqfile_chr, chrom))
-        annot_file = pd.read_csv("{}.{}.annot.gz".format(args.annot_chr, chrom))
+        print(chrom)
+        frq_file = pd.read_csv("{}{}.frq".format(args.frqfile, chrom), delim_whitespace=True)
+        annot_file = pd.read_csv("{}{}.annot.gz".format(args.annot, chrom), sep="\t")
 
-        merged_annot_frq = pd.merge(
-            frq_file[np.logical_and(frq_file.MAF > 0.05, frq_file.MAF < 0.95),:],
-            annot_file,
-            left_on=["CHR", "SNP"], right_on=["CHR", "SNP"])
+        passed_maf = (frq_file.MAF > 0.05) & (frq_file.MAF < 0.95)
+        frq_file["BP"] = annot_file["BP"]
 
-        # For
-        for gene, grouped in gencode_parser.df.groupby("gene_id"):
+        for gene, grouped in gene_dataframe.groupby("gene_id"):
             # Get the rows from merged_annot_frq that do overlap with
-            merged = pd.merge(merged_annot_frq, grouped, right_on="CHR", left_on="chromosome")
-
+            merged = pd.merge(frq_file, grouped, left_on="CHR", right_on="chromosome")
             # Keep the rows that are in the window
-            in_window = merged.loc[np.logical_and(merged.BP > merged.start - trans_radius, merged.BP < merged.end + trans_radius)]
-
+            snps_in_window_cis = merged.loc[
+                np.logical_and(merged.BP > merged.cis_upstream,
+                merged.BP < merged.cis_downstream)].SNP.drop_duplicates()
+            snps_in_window_trans = merged.loc[
+                np.logical_and(merged.BP > merged.trans_upstream,
+                               merged.BP < merged.trans_downstream)].SNP.drop_duplicates()
             # Remove all duplicated rows and sum annotations for the merged rows,
+            partial_m_keep[gene].append(
+                annot_file.loc[
+                    passed_maf & annot_file.SNP.isin(snps_in_window_cis),
+                    annot_file.columns.drop(["CHR", "BP", "SNP", "CM"])]
+                .sum())
             # OR
             # Take the unmerged items, remove all that are in_window, and sum annotations.
+            partial_m_remove[gene].append(
+                annot_file.loc[
+                    passed_maf & ~annot_file.SNP.isin(snps_in_window_trans),
+                    annot_file.columns.drop(["CHR", "BP", "SNP", "CM"])]
+                .sum())
 
-    # Output
+    heritability_snps_in = pd.DataFrame({gene: pd.concat(sums) for gene, sums in partial_m_keep.items() if len(sums) > 1})
+    heritability_snps_out = pd.DataFrame({gene: pd.concat(sums) for gene, sums in partial_m_remove.items() if len(sums) > 1})
+
+    heritability_snps_out.T.map(str).agg(','.join, axis=1).to_csv("{}_trans_gen_annot_M_5_50.txt", sep="\t")
+    heritability_snps_in.T.map(str).agg(','.join, axis=1).to_csv("{}_cis_gen_annot_M_5_50.txt", sep="\t")
+
     return 0
 
 
