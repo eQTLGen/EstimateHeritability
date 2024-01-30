@@ -89,7 +89,6 @@ process EstimateCisHeritabilityLdsc {
 
     input:
       tuple val(gene), val(annot), path(sumstats), val(m_5_50)
-      path gwas
       path ld_ch
       path frqfile_ch
       path weights_ch
@@ -131,7 +130,6 @@ process EstimateTransHeritabilityLdsc {
 
     input:
       tuple val(gene), val(annot), path(sumstats), val(m_5_50)
-      path gwas
       path ld_ch
       path frqfile_ch
       path weights_ch
