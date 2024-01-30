@@ -163,13 +163,13 @@ workflow {
 
     // Run Heritability estimates
     ldsc_cis_output_ch = EstimateCisHeritabilityLdsc(
-        ldsc_cis_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch, frqfile_ch, weights_ch)
+        ldsc_cis_in_ch, ld_ch, frqfile_ch, weights_ch)
 
     ldsc_trans_output_ch = EstimateTransHeritabilityLdsc(
-        ldsc_trans_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch, frqfile_ch, weights_ch)
+        ldsc_trans_in_ch, ld_ch, frqfile_ch, weights_ch)
 
     // ldsc_gw_output_ch = EstimateGwHeritabilityLdsc(
-    //     ldsc_gw_in_ch, process_gwas_ch.map { name, gws, file -> file }.collect(), ld_ch, frqfile_ch, weights_ch)
+    //     ldsc_gw_in_ch, ld_ch, frqfile_ch, weights_ch)
 
     //EstimateHeritabilityLdscAllPairwise(
     //    process_gwas_ch.map { name, gws, file -> name }.collect(),
