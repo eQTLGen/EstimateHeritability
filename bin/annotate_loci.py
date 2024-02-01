@@ -349,6 +349,9 @@ def main(argv=None):
         print("exiting...")
         return 0
 
+    del eqtls
+    del eqtls_filtered
+
     print("Loading gene annotations from '{}'".format(args.gene_ref))
 
     gencode_parser = GtfParser(args.gene_ref)
@@ -390,6 +393,14 @@ def main(argv=None):
         eqtls_annotated
         .groupby("phenotype", group_keys=False).apply(lambda x: clumper.identify_lead_snps(x)))
 
+    lead_effects.to_csv("lead_variants.csv.gz", sep="\t", index=False)
+
+    lead_effects["lead_effect_upstream"] = lead_effects["bp_variant"] - polygenic_window_flank_size
+    lead_effects["lead_effect_downstream"] = lead_effects["bp_variant"] + polygenic_window_flank_size
+
+    (lead_effects[["chromosome_variant", "lead_effect_upstream", "lead_effect_downstream", "phenotype"]]
+     .to_csv("polygenic.bed", sep="\t", index=False, header=False))
+
     clumper.window = polygenic_window_flank_size
 
     polygenic = (
@@ -413,10 +424,6 @@ def main(argv=None):
             confined.chromosome_variant == confined.chromosome_gene,
             np.logical_and(confined.cis_upstream < confined.bp_variant,
                            confined.cis_downstream > confined.bp_variant))
-        lead_effects["cis"] = np.logical_and(
-            lead_effects.chromosome_variant == lead_effects.chromosome_gene,
-            np.logical_and(lead_effects.cis_upstream < lead_effects.bp_variant,
-                           lead_effects.cis_downstream > lead_effects.bp_variant))
 
         # Trans effects
         trans = ~np.logical_and(
@@ -426,26 +433,28 @@ def main(argv=None):
 
         out = confined.rename(columns=ldsc_selector)[[*ldsc_selector.values()]]
 
-        # output all data
-        if out.loc[cis].shape[0] > 0:
-            out.loc[cis].to_csv("{}.sumstats_hm3.cis_all.csv.gz".format(gene), sep="\t", index=False)
-        if out.loc[trans].shape[0] > 0:
-            out.loc[trans].to_csv("{}.sumstats_hm3.trans_all.csv.gz".format(gene), sep="\t", index=False)
-        if out.shape[0] > 0:
-            out.to_csv("{}.sumstats_hm3.gw_all.csv.gz".format(gene), sep="\t", index=False)
-
-        # output polygenic signal only
-        if out.loc[common].loc[cis.loc[common]].shape[0] > 0:
-            out.loc[common].loc[cis.loc[common]].to_csv("{}.sumstats_hm3.cis_polygenic.csv.gz".format(gene), sep="\t", index=False)
-        if out.loc[common].loc[trans.loc[common]].shape[0] > 0:
-            out.loc[common].loc[trans.loc[common]].to_csv("{}.sumstats_hm3.trans_polygenic.csv.gz".format(gene), sep="\t", index=False)
-        if out.loc[common].shape[0] > 0:
-            out.loc[common].to_csv("{}.sumstats_hm3.gw_polygenic.csv.gz".format(gene), sep="\t", index=False)
+        write_sumstats(cis, common, out, trans, gene)
 
     # output ranges of non-polygenic windows
 
     # output lead effects
     return 0
+
+
+def write_sumstats(cis, common, out, trans, gene):
+    # output all data
+    if out.loc[cis].shape[0] > 0:
+        out.loc[cis].to_csv("{}.sumstats_hm3.cis_all.csv.gz".format(gene), sep="\t", index=False)
+    if out.loc[trans].shape[0] > 0:
+        out.loc[trans].to_csv("{}.sumstats_hm3.trans_all.csv.gz".format(gene), sep="\t", index=False)
+    if out.shape[0] > 0:
+        out.to_csv("{}.sumstats_hm3.gw_all.csv.gz".format(gene), sep="\t", index=False)
+    # output polygenic signal only
+    if out.loc[common].loc[trans.loc[common]].shape[0] > 0:
+        out.loc[common].loc[trans.loc[common]].to_csv(
+            "{}.sumstats_hm3.trans_polygenic.csv.gz".format(gene), sep="\t", index=False)
+    if out.loc[common].shape[0] > 0:
+        out.loc[common].to_csv("{}.sumstats_hm3.gw_polygenic.csv.gz".format(gene), sep="\t", index=False)
 
 
 if __name__ == "__main__":

@@ -113,7 +113,7 @@ process ProcessResults {
 
 
 process PrepareHeritabilityEstimation {
-    scratch true
+    scratch false
 
     input:
         path input
@@ -128,9 +128,13 @@ process PrepareHeritabilityEstimation {
         path frqfile_ch
 
     output:
-        path "*.sumstats.*.csv.gz", emit: sumstats, optional:true
-        path "*.lead_effects.csv", emit: leads
-        path "heritability_snps.*.csv", emit: variants
+        path "*.sumstats_hm3.gw_polygenic.csv.gz", emit: sumstats_polygenic, optional:true
+        path "*.sumstats_hm3.trans_all.csv.gz", emit: sumstats_trans, optional:true
+        path "*.sumstats_hm3.cis_all.csv.gz", emit: sumstats_cis, optional:true
+        path "lead_variants.csv.gz", emit: leads
+        path "M_5_50.cis.txt", emit: cis_variants
+        path "M_5_50.trans.txt", emit: trans_variants
+        path "M_5_50.polygenic.txt", emit: polygenic_variants
 
     shell:
         variants_arg = (variants.name != 'NO_FILE') ? "--variants-file ${variants}" : ""
@@ -161,7 +165,7 @@ process PrepareHeritabilityEstimation {
             --i2-threshold !{isqThreshold}
 
         count_heritability_snps.py \
-            --bed-file-incl "cis.bed"
+            --bed-file-incl "cis.bed" \
             --bed-file-excl "trans.bed" "polygenic.bed" \
             --annot-chr !{ld_ch}/baselineLD. \
             --frqfile-chr !{frqfile_ch}/1000G.EUR.hg38. \

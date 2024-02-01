@@ -108,7 +108,7 @@ def count_heritability_snps_including(df, annot_columns, annot_file_df, frq_file
             (row.chromosome, row.start, row.end))
             for index, row in grouped.iterrows()]).drop_duplicates()
         # Remove all duplicated rows and sum annotations for the merged rows,
-        partial_inclusion[gene] = annot_file_df.iloc[
+        partial_inclusion[gene] = annot_file_df.loc[
             snp_inclusion.index, annot_columns].sum()
     return pd.DataFrame(partial_inclusion)
 
@@ -124,7 +124,7 @@ def count_heritability_snps_excluding(df, annot_columns, annot_file_df, frq_file
             (row.chromosome, row.start, row.end))
             for index, row in grouped.iterrows()]).drop_duplicates()
         # Remove all duplicated rows and sum annotations for the merged rows,
-        partial[gene] = annot_file_df.iloc[
+        partial[gene] = annot_file_df.loc[
             ~annot_file_df.index.isin(snp_inclusion.index), annot_columns].sum()
     return pd.DataFrame(partial)
 
@@ -151,7 +151,6 @@ def main(argv=None):
 
     args = parser.parse_args(argv[1:])
     print(args)
-    print("Loading gene annotations from '{}'".format(args.gene_ref))
 
     frq_file_df_list = []
     annot_file_df_list = []
@@ -178,15 +177,15 @@ def main(argv=None):
         inclusion_bed_file = pd.read_csv(bed_file, sep="\t", header=None, names=["chromosome", "start", "end", "name"])
         heritability_snps = count_heritability_snps_including(
             inclusion_bed_file, annot_columns, annot_file_df, frq_file_df)
-        heritability_snps.T.map(str).agg(','.join, axis=1).to_csv(
-            "M_5_50.{}.txt".format(bed_file.replace(".bed", "")), sep="\t")
+        heritability_snps.astype(str).T.agg(','.join,axis=1).to_csv(
+            "M_5_50.{}.txt".format(bed_file.replace(".bed", "")), sep="\t", header=False)
 
     for bed_file in args.bed_exclusion_file:
         exclusion_bed_file = pd.read_csv(bed_file, sep="\t", header=None, names=["chromosome", "start", "end", "name"])
         heritability_snps = count_heritability_snps_excluding(
             exclusion_bed_file, annot_columns, annot_file_df, frq_file_df)
-        heritability_snps.T.map(str).agg(','.join, axis=1).to_csv(
-            "M_5_50.{}.txt".format(bed_file.replace(".bed", "")), sep="\t")
+        heritability_snps.astype(str).T.agg(','.join,axis=1).to_csv(
+            "M_5_50.{}.txt".format(bed_file.replace(".bed", "")), sep="\t", header=False)
 
     return 0
 
