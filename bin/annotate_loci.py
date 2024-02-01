@@ -197,8 +197,6 @@ class Clumper:
                     (data_filtered['chromosome_variant'] == lead_snp['chromosome_variant']) &
                     (data_filtered['bp_variant'] > lead_snp['bp_variant'] - window) &
                     (data_filtered['bp_variant'] < lead_snp['bp_variant'] + window))]
-        print(pd.DataFrame(res))
-        print(data_filtered.shape[0])
         return data_filtered
 
 
@@ -261,6 +259,9 @@ def main(argv=None):
     parser.add_argument('--i2-threshold', dest='i_squared_threshold', type=float, required=False,
                         default=40)
 
+    cis_window_flank_size = 1 * 10 ** 6
+    polygenic_window_flank_size = 5 * 10 ** 6
+
     args = parser.parse_args(argv[1:])
     print(args)
     print("Loading variant reference from '{}'".format(args.variant_reference))
@@ -277,13 +278,6 @@ def main(argv=None):
     variant_list = load_variant_list(args)
 
     cohorts = np.array(args.cohorts)
-
-    print("Loading gene annotations from '{}'".format(args.gene_ref))
-
-    gencode_parser = GtfParser(args.gene_ref)
-    gene_dataframe = gencode_parser.df
-
-    print(gene_dataframe.head())
 
     overview_df = pd.read_table(os.path.join(args.inclusion_path, "filter_logs.log"), index_col=False)
     overview_df.set_index('Dataset', inplace=True)
@@ -325,9 +319,9 @@ def main(argv=None):
         np.sum(~passed_variants), eqtls.phenotype[0]]
 
     (pd.DataFrame({"n_passed_variants": n_passed_variants,
-                  "n_failed_variants": n_failed_variants},
+                   "n_failed_variants": n_failed_variants},
                   index = np.array(["i_squared", "sample_size", "overall", "gene"]))
-        .to_csv("{}.passed_variants.csv".format(args.out_prefix), sep="\t", index=True, index_label="class"))
+     .to_csv("{}.passed_variants.csv".format(args.out_prefix), sep="\t", index=True, index_label="class"))
 
     # For each gene, check what the number of variants are. If it is lower than
 
@@ -355,6 +349,35 @@ def main(argv=None):
         print("exiting...")
         return 0
 
+    print("Loading gene annotations from '{}'".format(args.gene_ref))
+
+    gencode_parser = GtfParser(args.gene_ref)
+    gene_dataframe = gencode_parser.df
+
+    gene_dataframe = gene_dataframe.loc[gene_dataframe.gene_id.isin(eqtls_genes_filtered.phenotype)]
+
+    # In the dataframe, add a column to indicate what the right boundary (downstream) is for the trans window,
+    # and what the left boundary (upstream) is for the trans window
+    gene_dataframe["trans_downstream"] = gene_dataframe.end + polygenic_window_flank_size
+    gene_dataframe["trans_upstream"] = gene_dataframe.start - polygenic_window_flank_size
+
+    # In the dataframe, add a column to indicate what the right boundary (downstream) is for the cis window,
+    # and what the left boundary (upstream) is for the cis window
+    gene_dataframe["cis_downstream"] = gene_dataframe.end + cis_window_flank_size
+    gene_dataframe["cis_upstream"] = gene_dataframe.start - cis_window_flank_size
+
+    # Fix the upstream, lower boundary for both cis and the trans window to a minimum of 0
+    gene_dataframe.loc[gene_dataframe["cis_upstream"] < 0, "cis_upstream"] = 0
+    gene_dataframe.loc[gene_dataframe["trans_upstream"] < 0, "trans_upstream"] = 0
+
+    # Output the boundaries.
+    trans_gene_dataframe = gene_dataframe[["chromosome", "trans_upstream", "trans_downstream", "gene_id"]]
+    (trans_gene_dataframe
+     .to_csv("trans.bed", sep="\t", index=False, header=False))
+    cis_gene_dataframe = gene_dataframe[["chromosome", "cis_upstream", "cis_downstream", "gene_id"]]
+    (cis_gene_dataframe
+     .to_csv("cis.bed", sep="\t", index=False, header=False))
+
     # Perform method
     eqtls_annotated = (
         eqtls_genes_filtered.set_index(["variant", "phenotype"])
@@ -362,62 +385,66 @@ def main(argv=None):
         .merge(gene_dataframe.rename(columns={'gene_id': 'phenotype'},).set_index("phenotype"), how="inner", left_index=True, right_index=True,
                suffixes=('', '_gene'), validate="m:1")).reset_index()
 
-    clumper = Clumper(p_threshold=5e-8, window=1000000)
+    clumper = Clumper(p_threshold=5e-8, window=cis_window_flank_size)
     lead_effects = (
         eqtls_annotated
         .groupby("phenotype", group_keys=False).apply(lambda x: clumper.identify_lead_snps(x)))
+
+    clumper.window = polygenic_window_flank_size
 
     polygenic = (
         eqtls_annotated
         .groupby("phenotype", group_keys=False).apply(lambda x: clumper.filter_significant_effects(x))).index
 
     # Identify genes that have a cis-effect
-    cis_window_flank_size = 1 * 10 ** 6
-    trans_window_flank_size = 5 * 10 ** 6
 
     # Variants
-    confined = eqtls_annotated.loc[eqtls_annotated.variant.isin(np.array(variant_list))]
-    common = confined.index.intersection(polygenic)
-
-    # Cis effects
-    cis = np.logical_and(
-        confined.chromosome_variant == confined.chromosome_gene,
-        np.logical_and(confined.start - cis_window_flank_size < confined.bp_variant,
-                       confined.end + cis_window_flank_size > confined.bp_variant))
-    lead_effects["cis"] = np.logical_and(
-        lead_effects.chromosome_variant == lead_effects.chromosome_gene,
-        np.logical_and(lead_effects.start - cis_window_flank_size < lead_effects.bp_variant,
-                       lead_effects.end + cis_window_flank_size > lead_effects.bp_variant))
-
-    # Trans effects
-    trans = ~np.logical_and(
-        confined.chromosome_variant == confined.chromosome_gene,
-        np.logical_and(confined.start - trans_window_flank_size < confined.bp_variant,
-                       confined.end + trans_window_flank_size > confined.bp_variant))
+    selected_variants = eqtls_annotated.loc[eqtls_annotated.variant.isin(np.array(variant_list))]
 
     ldsc_selector = {"variant": "SNP", "sample_size": "N", "z_score": "Z", "p_value": "P",
                      "beta": "BETA", "standard_error": "SE", "allele_eff": "A1", "allele_ref": "A2"}
 
-    out = confined.rename(columns=ldsc_selector)[[*ldsc_selector.values()]]
+    for gene, confined in selected_variants.groupby("phenotype"):
 
-    # output all data
-    if out.loc[cis].shape[0] > 0:
-        out.loc[cis].to_csv("{}.sumstats.cis_all.csv.gz".format(args.out_prefix), sep="\t", index=False)
-    if out.loc[trans].shape[0] > 0:
-        out.loc[trans].to_csv("{}.sumstats.trans_all.csv.gz".format(args.out_prefix), sep="\t", index=False)
-    if out.shape[0] > 0:
-        out.to_csv("{}.sumstats.gw_all.csv.gz".format(args.out_prefix), sep="\t", index=False)
+        common = confined.index.intersection(polygenic)
 
-    # output polygenic signal only
-    if out.loc[common].loc[cis.loc[common]].shape[0] > 0:
-        out.loc[common].loc[cis.loc[common]].to_csv("{}.sumstats.cis_polygenic.csv.gz".format(args.out_prefix), sep="\t", index=False)
-    if out.loc[common].loc[trans.loc[common]].shape[0] > 0:
-        out.loc[common].loc[trans.loc[common]].to_csv("{}.sumstats.trans_polygenic.csv.gz".format(args.out_prefix), sep="\t", index=False)
-    if out.loc[common].shape[0] > 0:
-        out.loc[common].to_csv("{}.sumstats.gw_polygenic.csv.gz".format(args.out_prefix), sep="\t", index=False)
+        # Cis effects
+        cis = np.logical_and(
+            confined.chromosome_variant == confined.chromosome_gene,
+            np.logical_and(confined.cis_upstream < confined.bp_variant,
+                           confined.cis_downstream > confined.bp_variant))
+        lead_effects["cis"] = np.logical_and(
+            lead_effects.chromosome_variant == lead_effects.chromosome_gene,
+            np.logical_and(lead_effects.cis_upstream < lead_effects.bp_variant,
+                           lead_effects.cis_downstream > lead_effects.bp_variant))
+
+        # Trans effects
+        trans = ~np.logical_and(
+            confined.chromosome_variant == confined.chromosome_gene,
+            np.logical_and(confined.trans_upstream < confined.bp_variant,
+                           confined.trans_downstream > confined.bp_variant))
+
+        out = confined.rename(columns=ldsc_selector)[[*ldsc_selector.values()]]
+
+        # output all data
+        if out.loc[cis].shape[0] > 0:
+            out.loc[cis].to_csv("{}.sumstats_hm3.cis_all.csv.gz".format(gene), sep="\t", index=False)
+        if out.loc[trans].shape[0] > 0:
+            out.loc[trans].to_csv("{}.sumstats_hm3.trans_all.csv.gz".format(gene), sep="\t", index=False)
+        if out.shape[0] > 0:
+            out.to_csv("{}.sumstats_hm3.gw_all.csv.gz".format(gene), sep="\t", index=False)
+
+        # output polygenic signal only
+        if out.loc[common].loc[cis.loc[common]].shape[0] > 0:
+            out.loc[common].loc[cis.loc[common]].to_csv("{}.sumstats_hm3.cis_polygenic.csv.gz".format(gene), sep="\t", index=False)
+        if out.loc[common].loc[trans.loc[common]].shape[0] > 0:
+            out.loc[common].loc[trans.loc[common]].to_csv("{}.sumstats_hm3.trans_polygenic.csv.gz".format(gene), sep="\t", index=False)
+        if out.loc[common].shape[0] > 0:
+            out.loc[common].to_csv("{}.sumstats_hm3.gw_polygenic.csv.gz".format(gene), sep="\t", index=False)
+
+    # output ranges of non-polygenic windows
 
     # output lead effects
-    lead_effects.to_csv("{}.lead_effects.csv".format(args.out_prefix), sep="\t", index=False)
     return 0
 
 

@@ -75,9 +75,6 @@ cohorts_ch = Channel.fromPath(params.mastertable)
     .splitCsv(header: true, sep: '\t', strip: true)
     .map{row -> [ row.cohort_new_name ]}
 
-//cohorts_ch = Channel
-//   .fromList( ["GTEx_2017-06-05_v8_EUR"] )
-
 inclusion_step_output_ch = file(params.inclusion_step_output)
 one_kg_bed_ch = file(params.variants_bed)
 variants_ch = file(params.variants)
@@ -85,11 +82,11 @@ hapmap_ch = file(params.hapmap)
 i_squared_threshold = 100
 onekg_gwas_by_subtraction_reference = Channel.fromPath("data/reference.1000G.maf.0.005.txt.gz").collect()
 
-Channel.fromPath(params.maf_table).collect().set { maf_table_ch }
-
 ld_ch = Channel.fromPath(params.ld_w_dir, type: 'dir').collect()
+frqfile_ch = Channel.fromPath(params.frqfile_dir, type: 'dir').collect()
+weights_ch = Channel.fromPath(params.weights_dir, type: 'dir').collect()
 
-gene_chunk_size=1
+gene_chunk_size=10
 
 log.info """=================================================
 Estimate heritability v${workflow.manifest.version}"
@@ -121,44 +118,26 @@ workflow {
     // Buffer genes
     genes_buffered_ch = genes_ch.collate(gene_chunk_size)
 
-    // if (params.per_cohort) {
-    //     // Extract loci
-    //     results_ch = ExtractResultsPerCohort(input_parquet_ch, variant_reference_ch, variants_ch, genes_buffered_ch, params.cols, cohorts_ch.collect())
-    //         .flatten()
-    //         .map { file ->
-    //                def key = file.name.toString().tokenize('.').get(1)
-    //                return tuple(key, file) }
-    //         groupTuple()
-    // } else {
-    //     // Extract loci
-    //     results_ch = ExtractResults(input_parquet_ch, variant_reference_ch, variants_ch, genes_buffered_ch, params.cols)
-    //         .flatten()
-    //         .map { file ->
-    //                def key = file.name.toString().tokenize('.').get(1)
-    //                return tuple(key, file) }
-    //         groupTuple()
-    // }
-
-    LoadResultsAnnotated(
+    PrepareHeritabilityEstimation(
         input_parquet_ch, variant_reference_ch, variants_ch, gene_reference_ch, inclusion_step_output_ch,
-        genes_buffered_ch, cohorts_ch.collect(), i_squared_threshold)
+        genes_buffered_ch, cohorts_ch.collect(), i_squared_threshold, ld_ch, frqfile_ch)
 
-    results_ch = LoadResultsAnnotated.out.sumstats
-        .flatten()
-        .map { file ->
-               def gene = file.name.toString().tokenize('.').get(2)
-               def annot = file.name.toString().tokenize('.').get(3)
-               def cis_trans_gw = annot.tokenize('_').get(0)
-               return tuple(gene, cis_trans_gw, annot, file) }
-        .groupTuple()
-
-    // List number of variants per gene
-    number_of_passed_variants = LoadResultsAnnotated.out.variants
-        .collectFile(keepHeader: true, skip: 1, name: "variants_per_gene.txt", storeDir: params.output)
+    // results_ch = LoadResultsAnnotated.out.sumstats
+    //     .flatten()
+    //     .map { file ->
+    //            def gene = file.name.toString().tokenize('.').get(2)
+    //            def annot = file.name.toString().tokenize('.').get(3)
+    //            def cis_trans_gw = annot.tokenize('_').get(0)
+    //            return tuple(gene, cis_trans_gw, annot, file) }
+    //     .groupTuple()
 
     // List number of variants per gene
-    lead_effects_ch = LoadResultsAnnotated.out.leads
-        .collectFile(keepHeader: true, skip: 1, name: "lead_effect_variants.txt", storeDir: params.output)
+    // number_of_passed_variants = LoadResultsAnnotated.out.variants
+    //    .collectFile(keepHeader: true, skip: 1, name: "variants_per_gene.txt", storeDir: params.output)
+
+    // List number of variants per gene
+    // lead_effects_ch = LoadResultsAnnotated.out.leads
+    //    .collectFile(keepHeader: true, skip: 1, name: "lead_effect_variants.txt", storeDir: params.output)
 
     // Count the number of heritability variants for each gene
     // heritability_snps_file_ch = CountHeritabilitySnps(gene_reference_ch, lead_effects_ch, one_kg_bed_ch)

@@ -112,7 +112,7 @@ process ProcessResults {
 }
 
 
-process LoadResultsAnnotated {
+process PrepareHeritabilityEstimation {
     scratch true
 
     input:
@@ -124,11 +124,13 @@ process LoadResultsAnnotated {
         val genes
         val cohorts
         val isqThreshold
+        path ld_ch
+        path frqfile_ch
 
     output:
         path "*.sumstats.*.csv.gz", emit: sumstats, optional:true
         path "*.lead_effects.csv", emit: leads
-        path "*.passed_variants.csv", emit: variants
+        path "heritability_snps.*.csv", emit: variants
 
     shell:
         variants_arg = (variants.name != 'NO_FILE') ? "--variants-file ${variants}" : ""
@@ -157,6 +159,13 @@ process LoadResultsAnnotated {
             --gene-ref !{geneReference} \
             --out-prefix annotated.!{genes.join("_")} \
             --i2-threshold !{isqThreshold}
+
+        count_heritability_snps.py \
+            --bed-file-incl "cis.bed"
+            --bed-file-excl "trans.bed" "polygenic.bed" \
+            --annot-chr !{ld_ch}/baselineLD. \
+            --frqfile-chr !{frqfile_ch}/1000G.EUR.hg38. \
+            --out-prefix counts
 
         rm -r tmp_eqtls
         '''
