@@ -395,6 +395,10 @@ def main(argv=None):
 
     lead_effects.to_csv("lead_variants.csv.gz", sep="\t", index=False)
 
+    for colname in lead_effects.columns.values:
+        print(colname)
+    sys.stdout.flush()
+
     lead_effects["lead_effect_upstream"] = lead_effects["bp_variant"] - polygenic_window_flank_size
     lead_effects["lead_effect_downstream"] = lead_effects["bp_variant"] + polygenic_window_flank_size
 
