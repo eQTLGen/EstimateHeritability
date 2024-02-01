@@ -361,13 +361,13 @@ def main(argv=None):
 
     # In the dataframe, add a column to indicate what the right boundary (downstream) is for the trans window,
     # and what the left boundary (upstream) is for the trans window
-    gene_dataframe["trans_downstream"] = gene_dataframe.end + polygenic_window_flank_size
-    gene_dataframe["trans_upstream"] = gene_dataframe.start - polygenic_window_flank_size
+    gene_dataframe["trans_downstream"] = gene_dataframe["end"] + polygenic_window_flank_size
+    gene_dataframe["trans_upstream"] = gene_dataframe["start"] - polygenic_window_flank_size
 
     # In the dataframe, add a column to indicate what the right boundary (downstream) is for the cis window,
     # and what the left boundary (upstream) is for the cis window
-    gene_dataframe["cis_downstream"] = gene_dataframe.end + cis_window_flank_size
-    gene_dataframe["cis_upstream"] = gene_dataframe.start - cis_window_flank_size
+    gene_dataframe["cis_downstream"] = gene_dataframe["end"] + cis_window_flank_size
+    gene_dataframe["cis_upstream"] = gene_dataframe["start"] - cis_window_flank_size
 
     # Fix the upstream, lower boundary for both cis and the trans window to a minimum of 0
     gene_dataframe.loc[gene_dataframe["cis_upstream"] < 0, "cis_upstream"] = 0
@@ -393,13 +393,16 @@ def main(argv=None):
         eqtls_annotated
         .groupby("phenotype", group_keys=False).apply(lambda x: clumper.identify_lead_snps(x)))
 
-    lead_effects.to_csv("lead_variants.csv.gz", sep="\t", index=False)
+    if lead_effects.shape[0] > 0:
+        lead_effects.to_csv("lead_variants.csv.gz", sep="\t", index=False)
 
-    lead_effects["lead_effect_upstream"] = lead_effects["bp_variant"] - polygenic_window_flank_size
-    lead_effects["lead_effect_downstream"] = lead_effects["bp_variant"] + polygenic_window_flank_size
+        lead_effects["lead_effect_upstream"] = lead_effects["bp_variant"] - polygenic_window_flank_size
+        lead_effects["lead_effect_downstream"] = lead_effects["bp_variant"] + polygenic_window_flank_size
 
-    (lead_effects[["chromosome_variant", "lead_effect_upstream", "lead_effect_downstream", "phenotype"]]
-     .to_csv("polygenic.bed", sep="\t", index=False, header=False))
+        (lead_effects[["chromosome_variant", "lead_effect_upstream", "lead_effect_downstream", "phenotype"]]
+         .to_csv("polygenic.bed", sep="\t", index=False, header=False))
+    else:
+        open("polygenic.bed", 'a').close()
 
     clumper.window = polygenic_window_flank_size
 
