@@ -145,17 +145,17 @@ workflow {
         .collectFile(keepHeader: true, skip: 1, name: "lead_effect_variants.txt", storeDir: params.output)
 
     // Heritability SNPs
-    cis_ldsc_in_ch = PrepareHeritabilityEstimation.out.cis_variants.splitCsv(header:false, sep:'\t')
+    ldsc_cis_in_ch = PrepareHeritabilityEstimation.out.cis_variants.splitCsv(header:false, sep:'\t')
         .flatten()
         .map { row -> row[0], row[1] }
         .join(cis_ch, by:[0,1], remainder:false)
 
-    trans_ldsc_in_ch = PrepareHeritabilityEstimation.out.trans_variants.splitCsv(header:false, sep:'\t')
+    ldsc_trans_in_ch = PrepareHeritabilityEstimation.out.trans_variants.splitCsv(header:false, sep:'\t')
         .flatten()
         .map { row -> row[0], row[1] }
         .join(trans_ch, by:[0,1], remainder:false)
 
-    polygenic_ldsc_in_ch = PrepareHeritabilityEstimation.out.polygenic_variants.splitCsv(header:false, sep:'\t')
+    ldsc_polygenic_in_ch = PrepareHeritabilityEstimation.out.polygenic_variants.splitCsv(header:false, sep:'\t')
         .flatten()
         .map { row -> row[0], row[1] }
         .join(polygenic_ch, by:[0,1], remainder:false)
