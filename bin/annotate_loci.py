@@ -357,7 +357,7 @@ def main(argv=None):
     gencode_parser = GtfParser(args.gene_ref)
     gene_dataframe = gencode_parser.df
 
-    gene_dataframe = gene_dataframe.loc[gene_dataframe.gene_id.isin(eqtls_genes_filtered.phenotype)]
+    gene_dataframe = gene_dataframe.loc[gene_dataframe.gene_id.isin(eqtls_genes_filtered.phenotype)].copy()
 
     # In the dataframe, add a column to indicate what the right boundary (downstream) is for the trans window,
     # and what the left boundary (upstream) is for the trans window
@@ -403,7 +403,7 @@ def main(argv=None):
          .to_csv("polygenic.bed", sep="\t", index=False, header=False))
     else:
         open("polygenic.bed", 'a').close()
-        open("lead_variants.csv.gz").close()
+        open("lead_variants.csv.gz", 'a').close()
 
     clumper.window = polygenic_window_flank_size
 
