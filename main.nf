@@ -86,7 +86,7 @@ ld_ch = Channel.fromPath(params.ld_w_dir, type: 'dir').collect()
 frqfile_ch = Channel.fromPath(params.frqfile_dir, type: 'dir').collect()
 weights_ch = Channel.fromPath(params.weights_dir, type: 'dir').collect()
 
-gene_chunk_size=10
+gene_chunk_size=1
 
 log.info """=================================================
 Estimate heritability v${workflow.manifest.version}"
