@@ -49,8 +49,8 @@ process CountHeritabilitySnps {
     '''
     count_heritability_snps.py \
         --gene-ref !{geneReference} \
-        --annot-chr !{ld_ch}/baselineLD.
-        --frqfile-chr !{frqfile_ch}/1000G.EUR.hg38.
+        --annot-chr !{ld_ch}/baselineLD. \
+        --frqfile-chr !{frqfile_ch}/1000G.EUR.hg38. \
         --out-prefix counts
     '''
 }

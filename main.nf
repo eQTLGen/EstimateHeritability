@@ -204,10 +204,10 @@ workflow {
         ldsc_trans_output_ch.map { name, gws, file, del -> del }.collect(),
         ldsc_trans_matrices_ch, "trans")
 
-    ProcessLdscDeleteValsGw(
-        ldsc_gw_output_ch.map { name, gws, file, del -> name }.collect(),
-        ldsc_gw_output_ch.map { name, gws, file, del -> del }.collect(),
-        ldsc_gw_matrices_ch, "gw")
+    //ProcessLdscDeleteValsGw(
+    //    ldsc_gw_output_ch.map { name, gws, file, del -> name }.collect(),
+    //    ldsc_gw_output_ch.map { name, gws, file, del -> del }.collect(),
+    //    ldsc_gw_matrices_ch, "gw")
 
     // WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
 }
