@@ -99,7 +99,7 @@ class GtfParser:
 # Functions
 def count_heritability_snps_including(df, annot_columns, annot_file_df, frq_file_df):
     partial_inclusion = dict()
-    for gene, grouped in df.groupby("gene_id"):
+    for gene, grouped in df.groupby("name"):
         print(gene)
         sys.stdout.flush()
         # Get the rows from merged_annot_frq that do overlap with
@@ -115,7 +115,7 @@ def count_heritability_snps_including(df, annot_columns, annot_file_df, frq_file
 
 def count_heritability_snps_excluding(df, annot_columns, annot_file_df, frq_file_df):
     partial = dict()
-    for gene, grouped in df.groupby("gene_id"):
+    for gene, grouped in df.groupby("name"):
         print(gene)
         sys.stdout.flush()
         # Get the rows from merged_annot_frq that do overlap with
