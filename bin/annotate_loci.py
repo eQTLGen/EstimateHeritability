@@ -403,6 +403,7 @@ def main(argv=None):
          .to_csv("polygenic.bed", sep="\t", index=False, header=False))
     else:
         open("polygenic.bed", 'a').close()
+        open("lead_variants.csv.gz").close()
 
     clumper.window = polygenic_window_flank_size
 
