@@ -29,13 +29,17 @@ inclusion_step_output="/gpfs/space/GI/eQTLGen/freeze2/InclusionLists/output_2023
 variant_reference="/gpfs/space/GI/eQTLGen/freeze1/eqtl_mapping/MetaAnalysis/bin/hase/data/1000G-30x.ref.gz"
 gene_reference="/gpfs/space/GI/eQTLGen/freeze1/InputFilesForPaper/2023-01-28_MetaAnalysis/data/Homo_sapiens.GRCh38.106.gtf.gz"
 
-ld_w_dir="/gpfs/space/GI/eQTLGen/public_data/ldsc/eur_w_ld_chr"
+ld_w_dir="/gpfs/space/GI/eQTLGen/public_data/ldsc/sldsc_files_hg38/baselineLD_v2.2"
+frqfile_dir="/gpfs/space/GI/eQTLGen/public_data/ldsc/sldsc_files_hg38/plink_files"
+weights_dir="/gpfs/space/GI/eQTLGen/public_data/ldsc/sldsc_files_hg38/weights"
+
 variants="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/EstimateHeritability/data/matching_unambiguous_hapmap_variants.txt"
 hapmap="/gpfs/space/GI/eQTLGen/public_data/ldsc/w_hm3.snplist"
 
 gwas_map="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/EstimateHeritability/gwas_studies_map.csv"
+maf_table="/gpfs/space/GI/eQTLGen/freeze2/PreMetaQc/output/MafInformation_2023-10-03.txt.gz"
 
-output_folder="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPCNoExpPC_2023-07-13"
+output_folder="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPCNoExpPC_2023-07-13/sldsc_2024-01-30"
 
 variants_bed="/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/EstimateHeritability/data/variants.chrALL.hg38.w_hm3.M_5_50.bed"
 
@@ -47,12 +51,15 @@ NXF_VER=21.10.6 ${nextflow_path}/nextflow run main.nf \
 --gene_reference ${gene_reference} \
 --output ${output_folder} \
 --ld_w_dir ${ld_w_dir} \
+--frqfile_dir ${frqfile_dir} \
+--weights_dir ${weights_dir} \
 --variants ${variants} \
 --hapmap ${hapmap} \
 --variants_bed ${variants_bed} \
 --gwas_map ${gwas_map} \
 --ldsc_source ${ldsc_sources} \
 --inclusion_step_output ${inclusion_step_output} \
+--maf_table ${maf_table} \
 -resume \
 -profile slurm,singularity
 

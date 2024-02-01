@@ -9,7 +9,7 @@ nextflow.enable.dsl = 2
 // import modules
 include { GwasBySubtraction; GwasBySubtraction as GwasBySubtractionTrans; EstimateTransHeritabilityLdsc; EstimateTransHeritabilityLdsc as EstimateGwHeritabilityLdsc; EstimateCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; ProcessLdscOutput as ProcessGwLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise; ProcessLdscDeleteVals; ProcessLdscDeleteVals as ProcessLdscDeleteValsGw } from './modules/EstimateHeritability'
 include { WriteOutRes } from './modules/WriteOutRes'
-include { ExtractResults; ExtractResultsPerCohort; ProcessResults; LoadResultsAnnotated } from './modules/CollectResults.nf'
+include { ExtractResults; ExtractResultsPerCohort; ProcessResults; PrepareHeritabilityEstimation } from './modules/CollectResults.nf'
 include { ProcessVuckovicGwasData } from './modules/ProcessGwas.nf'
 
 def helpmessage() {
