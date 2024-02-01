@@ -141,7 +141,7 @@ workflow {
                return tuple(gene, file) }
 
     // List number of variants per gene
-    lead_effects_ch = LoadResultsAnnotated.out.leads
+    lead_effects_ch = PrepareHeritabilityEstimation.out.leads
         .collectFile(keepHeader: true, skip: 1, name: "lead_effect_variants.txt", storeDir: params.output)
 
     // Heritability SNPs
