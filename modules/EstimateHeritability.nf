@@ -104,13 +104,13 @@ process EstimateCisHeritabilityLdsc {
     errorStrategy = 'ignore'
 
     input:
-      tuple val(gene), val(annot), path(sumstats), val(m_5_50)
+      tuple val(gene), val(m_5_50), path(sumstats)
       path ld_ch
       path frqfile_ch
       path weights_ch
 
     output:
-      tuple val(gene), val(annot), path('*_h2.log')
+      tuple val(gene), val("cis"), path('*_h2.log')
 
     shell:
     '''
@@ -125,16 +125,6 @@ process EstimateCisHeritabilityLdsc {
     --overlap-annot \
     --print-coefficients \
     --print-delete-vals
-
-    #/ldsc/ldsc.py \
-    #--rg !{sumstats},!{gwas.join(",")} \
-    #--ref-ld-chr !{ld_ch}/ \
-    #--w-ld-chr !{ld_ch}/ \
-    #--chisq-max 10000 \
-    #--M !{m_5_50} \
-    #--out !{gene}_rg \
-    #--print-cov \
-    #--print-delete-vals
     '''
 }
 
@@ -145,13 +135,13 @@ process EstimateTransHeritabilityLdsc {
     errorStrategy = 'ignore'
 
     input:
-      tuple val(gene), val(annot), path(sumstats), val(m_5_50)
+      tuple val(gene), val(m_5_50), path(sumstats)
       path ld_ch
       path frqfile_ch
       path weights_ch
 
     output:
-      tuple val(gene), val(annot), path('*_h2.log'), path('*_h2.delete')
+      tuple val(gene), val("trans"), path('*_h2.log'), path('*_h2.delete')
 
     shell:
     '''
@@ -166,16 +156,6 @@ process EstimateTransHeritabilityLdsc {
     --overlap-annot \
     --print-coefficients \
     --print-delete-vals
-
-    #/ldsc/ldsc.py \
-    #--rg !{sumstats},!{gwas.join(",")} \
-    #--ref-ld-chr !{ld_ch}/ \
-    #--w-ld-chr !{ld_ch}/ \
-    #--chisq-max 10000 \
-    #--M !{m_5_50} \
-    #--out !{gene}_rg \
-    #--print-cov \
-    #--print-delete-vals
     '''
 }
 

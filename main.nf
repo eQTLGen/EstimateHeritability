@@ -7,9 +7,9 @@
 nextflow.enable.dsl = 2
 
 // import modules
-include { GwasBySubtraction; GwasBySubtraction as GwasBySubtractionTrans; EstimateTransHeritabilityLdsc; EstimateTransHeritabilityLdsc as EstimateGwHeritabilityLdsc; EstimateCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; ProcessLdscOutput as ProcessGwLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise; ProcessLdscDeleteVals; ProcessLdscDeleteVals as ProcessLdscDeleteValsGw } from './modules/EstimateHeritability'
+include { EstimateTransHeritabilityLdsc; EstimateTransHeritabilityLdsc as EstimatePolyHeritabilityLdsc; EstimateCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; ProcessLdscOutput as ProcessGwLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise; ProcessLdscDeleteVals; ProcessLdscDeleteVals as ProcessLdscDeleteValsGw } from './modules/EstimateHeritability'
 include { WriteOutRes } from './modules/WriteOutRes'
-include { ExtractResults; ExtractResultsPerCohort; ProcessResults; PrepareHeritabilityEstimation } from './modules/CollectResults.nf'
+include { PrepareHeritabilityEstimation } from './modules/CollectResults.nf'
 include { ProcessVuckovicGwasData } from './modules/ProcessGwas.nf'
 
 def helpmessage() {
@@ -122,22 +122,22 @@ workflow {
         input_parquet_ch, variant_reference_ch, variants_ch, gene_reference_ch, inclusion_step_output_ch,
         genes_buffered_ch, cohorts_ch.collect(), i_squared_threshold, ld_ch, frqfile_ch)
 
-    polygenic_ch = PrepareHeritabilityEstimation.out.sumstats_polygenic
+    polygenic_ch = PrepareHeritabilityEstimation.out.sumstats_transpolygenic
         .flatten()
         .map { file ->
-               def gene = file.name.toString().tokenize('.').get(1)
+               def gene = file.name.toString().tokenize('.').get(0)
                return tuple(gene, file) }
 
     cis_ch = PrepareHeritabilityEstimation.out.sumstats_cis
         .flatten()
         .map { file ->
-               def gene = file.name.toString().tokenize('.').get(1)
+               def gene = file.name.toString().tokenize('.').get(0)
                return tuple(gene, file) }
 
     trans_ch = PrepareHeritabilityEstimation.out.sumstats_trans
         .flatten()
         .map { file ->
-               def gene = file.name.toString().tokenize('.').get(1)
+               def gene = file.name.toString().tokenize('.').get(0)
                return tuple(gene, file) }
 
     // List number of variants per gene
@@ -145,20 +145,20 @@ workflow {
         .collectFile(keepHeader: true, skip: 1, name: "lead_effect_variants.txt", storeDir: params.output)
 
     // Heritability SNPs
-    ldsc_cis_in_ch = PrepareHeritabilityEstimation.out.cis_variants.splitCsv(header:false, sep:'\t')
-        .flatten()
-        .map { row -> row[0], row[1] }
-        .join(cis_ch, by:[0,1], remainder:false)
+    ldsc_cis_in_ch = PrepareHeritabilityEstimation.out.cis_variants.collectFile()
+        .splitCsv(header:false, sep:'\t')
+        .map { row -> return tuple(row[0], row[1]) }
+        .join(cis_ch, by:[0], remainder:false)
 
-    ldsc_trans_in_ch = PrepareHeritabilityEstimation.out.trans_variants.splitCsv(header:false, sep:'\t')
-        .flatten()
-        .map { row -> row[0], row[1] }
-        .join(trans_ch, by:[0,1], remainder:false)
+    ldsc_trans_in_ch = PrepareHeritabilityEstimation.out.trans_variants.collectFile()
+        .splitCsv(header:false, sep:'\t')
+        .map { row -> return tuple(row[0], row[1]) }
+        .join(trans_ch, by:[0], remainder:false)
 
-    ldsc_polygenic_in_ch = PrepareHeritabilityEstimation.out.polygenic_variants.splitCsv(header:false, sep:'\t')
-        .flatten()
-        .map { row -> row[0], row[1] }
-        .join(polygenic_ch, by:[0,1], remainder:false)
+    ldsc_polygenic_in_ch = PrepareHeritabilityEstimation.out.transpolygenic_variants.collectFile()
+        .splitCsv(header:false, sep:'\t')
+        .map { row -> return tuple(row[0], row[1]) }
+        .join(polygenic_ch, by:[0], remainder:false)
 
     // Run Heritability estimates
     ldsc_cis_output_ch = EstimateCisHeritabilityLdsc(
@@ -167,13 +167,16 @@ workflow {
     ldsc_trans_output_ch = EstimateTransHeritabilityLdsc(
         ldsc_trans_in_ch, ld_ch, frqfile_ch, weights_ch)
 
+    ldsc_polygenic_output_ch = EstimatePolyHeritabilityLdsc(
+        ldsc_polygenic_in_ch, ld_ch, frqfile_ch, weights_ch)
+
     // Process LDSC logs
     ldsc_cis_matrices_ch = ProcessCisLdscOutput(ldsc_cis_output_ch)
         .collectFile(name:'ldsc_table_cis.txt', skip: 1, keepHeader: true, storeDir: params.output)
     ldsc_trans_matrices_ch = ProcessTransLdscOutput(ldsc_trans_output_ch)
         .collectFile(name:'ldsc_table_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
-    // ldsc_gw_matrices_ch = ProcessGwLdscOutput(ldsc_gw_output_ch)
-    //     .collectFile(name:'ldsc_table_gw.txt', skip: 1, keepHeader: true, storeDir: params.output)
+    ldsc_polygenic_matrices_ch = ProcessGwLdscOutput(ldsc_polygenic_output_ch)
+        .collectFile(name:'ldsc_table_polygenic.txt', skip: 1, keepHeader: true, storeDir: params.output)
 
     // Process LDSC stuff
     ProcessLdscDeleteVals(
@@ -181,10 +184,10 @@ workflow {
         ldsc_trans_output_ch.map { name, gws, file, del -> del }.collect(),
         ldsc_trans_matrices_ch, "trans")
 
-    //ProcessLdscDeleteValsGw(
-    //    ldsc_gw_output_ch.map { name, gws, file, del -> name }.collect(),
-    //    ldsc_gw_output_ch.map { name, gws, file, del -> del }.collect(),
-    //    ldsc_gw_matrices_ch, "gw")
+    ProcessLdscDeleteValsGw(
+        ldsc_polygenic_output_ch.map { name, gws, file, del -> name }.collect(),
+        ldsc_polygenic_output_ch.map { name, gws, file, del -> del }.collect(),
+        ldsc_polygenic_matrices_ch, "polygenic")
 
     // WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
 }

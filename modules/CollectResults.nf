@@ -128,6 +128,7 @@ process PrepareHeritabilityEstimation {
         path frqfile_ch
 
     output:
+        path "*.sumstats_hm3.trans_polygenic.csv.gz", emit: sumstats_transpolygenic, optional:true
         path "*.sumstats_hm3.gw_polygenic.csv.gz", emit: sumstats_polygenic, optional:true
         path "*.sumstats_hm3.trans_all.csv.gz", emit: sumstats_trans, optional:true
         path "*.sumstats_hm3.cis_all.csv.gz", emit: sumstats_cis, optional:true
@@ -135,6 +136,7 @@ process PrepareHeritabilityEstimation {
         path "M_5_50.cis.txt", emit: cis_variants
         path "M_5_50.trans.txt", emit: trans_variants
         path "M_5_50.polygenic.txt", emit: polygenic_variants
+        path "M_5_50.transpolygenic.txt", emit: transpolygenic_variants
 
     shell:
         variants_arg = (variants.name != 'NO_FILE') ? "--variants-file ${variants}" : ""
@@ -164,9 +166,11 @@ process PrepareHeritabilityEstimation {
             --out-prefix annotated.!{genes.join("_")} \
             --i2-threshold !{isqThreshold}
 
+        cat "trans.bed" "polygenic.bed" > "transpolygenic.bed"
+
         count_heritability_snps.py \
             --bed-file-incl "cis.bed" \
-            --bed-file-excl "trans.bed" "polygenic.bed" \
+            --bed-file-excl "trans.bed" "polygenic.bed" "transpolygenic.bed" \
             --annot-chr !{ld_ch}/baselineLD. \
             --frqfile-chr !{frqfile_ch}/1000G.EUR.hg38. \
             --out-prefix counts
