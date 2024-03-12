@@ -98,6 +98,40 @@ process EstimateHeritabilityLdsc2 {
 }
 
 
+process EstimateConstrainedCisHeritabilityLdsc {
+    container 'quay.io/cawarmerdam/ldsc:v0.3'
+    tag "ldsc_${annot}_${gene}"
+    errorStrategy = 'ignore'
+
+    input:
+      tuple val(gene), val(m_5_50), path(sumstats)
+      path ld_ch
+      path frqfile_ch
+      path weights_ch
+
+    output:
+      tuple val(gene), val("constrainedcis"), path('*_h2.log')
+
+    shell:
+    '''
+    zcat !{sumstats} | awk 'BEGIN{FS="\t"; OFS=FS} $2 != "0.0" ' > !{gene}.csv
+
+    /ldsc/ldsc.py \
+    --h2 !{gene}.csv \
+    --ref-ld-chr !{ld_ch}/baselineLD. \
+    --frqfile-chr !{frqfile_ch}/1000G.EUR.hg38. \
+    --w-ld-chr !{weights_ch}/weights.hm3_noMHC. \
+    --chisq-max 10000 \
+    --M !{m_5_50} \
+    --out !{gene}_baselineLD_h2 \
+    --intercept-h2 1 \
+    --overlap-annot \
+    --print-coefficients \
+    --print-delete-vals
+    '''
+}
+
+
 process EstimateCisHeritabilityLdsc {
     container 'quay.io/cawarmerdam/ldsc:v0.3'
     tag "ldsc_${annot}_${gene}"
@@ -114,8 +148,10 @@ process EstimateCisHeritabilityLdsc {
 
     shell:
     '''
+    zcat !{sumstats} | awk 'BEGIN{FS="\t"; OFS=FS} $2 != "0.0" ' > !{gene}.csv
+
     /ldsc/ldsc.py \
-    --h2 !{sumstats} \
+    --h2 !{gene}.csv \
     --ref-ld-chr !{ld_ch}/baselineLD. \
     --frqfile-chr !{frqfile_ch}/1000G.EUR.hg38. \
     --w-ld-chr !{weights_ch}/weights.hm3_noMHC. \
@@ -145,8 +181,10 @@ process EstimateTransHeritabilityLdsc {
 
     shell:
     '''
+    zcat !{sumstats} | awk 'BEGIN{FS="\t"; OFS=FS} $2 != "0.0" ' > !{gene}.csv
+
     /ldsc/ldsc.py \
-    --h2 !{sumstats} \
+    --h2 !{gene}.csv \
     --ref-ld-chr !{ld_ch}/baselineLD. \
     --frqfile-chr !{frqfile_ch}/1000G.EUR.hg38. \
     --w-ld-chr !{weights_ch}/weights.hm3_noMHC. \

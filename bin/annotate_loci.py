@@ -285,72 +285,122 @@ def main(argv=None):
 
     eqtls = pd.read_csv(args.input_file, sep='\t')
 
+    per_cohort = 'i_squared' not in eqtls.columns
+
     print(eqtls.head())
 
-    i_squared_threshold = args.i_squared_threshold
-    sample_size_threshold = total_sample_size * 0.5
-    pass_sample_size_threshold = (eqtls.sample_size > sample_size_threshold)
-    pass_i_squared_threshold = eqtls.i_squared < i_squared_threshold
+    if per_cohort:
+        sample_size_threshold = 0
+        pass_sample_size_threshold = (eqtls.sample_size > sample_size_threshold)
+        
+        print("Total theoretical sample size = {}".format(total_sample_size))
+        print("Sample size threshold = {}".format(sample_size_threshold))
+        print("Frequency of passed variants:")
+        print(np.unique(pass_sample_size_threshold, return_counts=True))
 
-    passed_variants = np.logical_and(pass_sample_size_threshold, pass_i_squared_threshold)
+        eqtls_filtered = eqtls.loc[pass_sample_size_threshold]
 
-    print("Total theoretical sample size = {}".format(total_sample_size))
-    print("Sample size threshold = {}".format(sample_size_threshold))
-    print("Frequency of passed variants:")
-    print(np.unique(pass_sample_size_threshold, return_counts=True))
+        n_passed_variants = [
+            np.sum(pass_sample_size_threshold), eqtls.phenotype[0]]
+        n_failed_variants = [
+            np.sum(~pass_sample_size_threshold), eqtls.phenotype[0]]
 
-    print("I2 threshold = {}".format(i_squared_threshold))
-    print("Frequency of passed variants:")
-    print(np.unique(pass_i_squared_threshold, return_counts=True))
+        (pd.DataFrame({"n_passed_variants": n_passed_variants,
+                       "n_failed_variants": n_failed_variants},
+                      index = np.array(["sample_size", "gene"]))
+         .to_csv("{}.passed_variants.csv".format(args.out_prefix), sep="\t", index=True, index_label="class"))
 
-    print("Filtering variants")
-    print("Frequency of passed variants:")
-    print(np.unique(passed_variants, return_counts=True))
+        n_variants_unfiltered = eqtls.groupby("phenotype").size()
+        n_variants_filtered = eqtls_filtered.groupby("phenotype").size()
 
-    eqtls_filtered = eqtls.loc[passed_variants]
+        n_variants = pd.concat(
+            [n_variants_unfiltered, n_variants_filtered],
+            keys=['unfiltered', 'filtered'], axis=1)
 
-    n_passed_variants = [
-        np.sum(pass_i_squared_threshold),
-        np.sum(pass_sample_size_threshold),
-        np.sum(passed_variants), eqtls.phenotype[0]]
-    n_failed_variants = [
-        np.sum(~pass_i_squared_threshold),
-        np.sum(~pass_sample_size_threshold),
-        np.sum(~passed_variants), eqtls.phenotype[0]]
+        n_variants["failed"] = np.logical_or(
+            np.isnan(n_variants.filtered),
+            n_variants.filtered < n_variants.unfiltered * 0.5)
 
-    (pd.DataFrame({"n_passed_variants": n_passed_variants,
-                   "n_failed_variants": n_failed_variants},
-                  index = np.array(["i_squared", "sample_size", "overall", "gene"]))
-     .to_csv("{}.passed_variants.csv".format(args.out_prefix), sep="\t", index=True, index_label="class"))
+        genes_failed = n_variants.loc[n_variants.failed].index
+        eqtls_genes_filtered = eqtls_filtered[~eqtls_filtered.phenotype.isin(genes_failed)]
 
-    # For each gene, check what the number of variants are. If it is lower than
+        print("For {} out of {} genes, the number of filtered variants is under 50% of the number of input variants"
+              .format(len(genes_failed), len(n_variants_unfiltered)))
+        if len(genes_failed) > 0:
+            print("Genes failed:\n", "\n".join(genes_failed))
 
-    n_variants_unfiltered = eqtls.groupby("phenotype").size()
-    n_variants_filtered = eqtls_filtered.groupby("phenotype").size()
+        if eqtls_genes_filtered.shape[0] < 0:
+            print("No genes left!")
+            print("exiting...")
+            return 0
 
-    n_variants = pd.concat(
-        [n_variants_unfiltered, n_variants_filtered],
-        keys=['unfiltered', 'filtered'], axis=1)
+        del eqtls_filtered
+    else:
+        i_squared_threshold = args.i_squared_threshold
+        sample_size_threshold = total_sample_size * 0.5
+        pass_sample_size_threshold = (eqtls.sample_size > sample_size_threshold)
+        pass_i_squared_threshold = eqtls.i_squared < i_squared_threshold
 
-    n_variants["failed"] = np.logical_or(
-        np.isnan(n_variants.filtered),
-        n_variants.filtered < n_variants.unfiltered * 0.5)
+        passed_variants = np.logical_and(pass_sample_size_threshold, pass_i_squared_threshold)
 
-    genes_failed = n_variants.loc[n_variants.failed].index
-    eqtls_genes_filtered = eqtls_filtered[~eqtls_filtered.phenotype.isin(genes_failed)]
+        print("Total theoretical sample size = {}".format(total_sample_size))
+        print("Sample size threshold = {}".format(sample_size_threshold))
+        print("Frequency of passed variants:")
+        print(np.unique(pass_sample_size_threshold, return_counts=True))
 
-    print("For {} out of {} genes, the number of filtered variants is under 50% of the number of input variants"
-          .format(len(genes_failed), len(n_variants_unfiltered)))
-    if len(genes_failed) > 0:
-        print("Genes failed:\n", "\n".join(genes_failed))
+        print("I2 threshold = {}".format(i_squared_threshold))
+        print("Frequency of passed variants:")
+        print(np.unique(pass_i_squared_threshold, return_counts=True))
 
-    if eqtls_genes_filtered.shape[0] < 0:
-        print("No genes left!")
-        print("exiting...")
-        return 0
+        print("Filtering variants")
+        print("Frequency of passed variants:")
+        print(np.unique(passed_variants, return_counts=True))
+
+        eqtls_filtered = eqtls.loc[passed_variants]
+
+        n_passed_variants = [
+            np.sum(pass_i_squared_threshold),
+            np.sum(pass_sample_size_threshold),
+            np.sum(passed_variants), eqtls.phenotype[0]]
+        n_failed_variants = [
+            np.sum(~pass_i_squared_threshold),
+            np.sum(~pass_sample_size_threshold),
+            np.sum(~passed_variants), eqtls.phenotype[0]]
+
+        (pd.DataFrame({"n_passed_variants": n_passed_variants,
+                       "n_failed_variants": n_failed_variants},
+                      index = np.array(["i_squared", "sample_size", "overall", "gene"]))
+         .to_csv("{}.passed_variants.csv".format(args.out_prefix), sep="\t", index=True, index_label="class"))
+
+        # For each gene, check what the number of variants are. If it is lower than
+
+        n_variants_unfiltered = eqtls.groupby("phenotype").size()
+        n_variants_filtered = eqtls_filtered.groupby("phenotype").size()
+
+        n_variants = pd.concat(
+            [n_variants_unfiltered, n_variants_filtered],
+            keys=['unfiltered', 'filtered'], axis=1)
+
+        n_variants["failed"] = np.logical_or(
+            np.isnan(n_variants.filtered),
+            n_variants.filtered < n_variants.unfiltered * 0.5)
+
+        genes_failed = n_variants.loc[n_variants.failed].index
+        eqtls_genes_filtered = eqtls_filtered[~eqtls_filtered.phenotype.isin(genes_failed)]
+
+        print("For {} out of {} genes, the number of filtered variants is under 50% of the number of input variants"
+              .format(len(genes_failed), len(n_variants_unfiltered)))
+        if len(genes_failed) > 0:
+            print("Genes failed:\n", "\n".join(genes_failed))
+
+        if eqtls_genes_filtered.shape[0] < 0:
+            print("No genes left!")
+            print("exiting...")
+            return 0
+
+        del eqtls_filtered
 
     del eqtls
-    del eqtls_filtered
 
     print("Loading gene annotations from '{}'".format(args.gene_ref))
 

@@ -1,5 +1,20 @@
 #!/bin/bash nextflow
 
+process Gunzip {
+    executor 'local'
+    errorStrategy 'ignore'
+
+    input:
+    path file_gz
+
+    output:
+    path "lead_effects.txt"
+
+    script:
+    """
+    gunzip -c "${file_gz}" > "lead_effects.txt"
+    """
+}
 
 process ExtractResults {
     scratch true
@@ -123,6 +138,7 @@ process PrepareHeritabilityEstimation {
         path inclusionDir
         val genes
         val cohorts
+        val fromCohort
         val isqThreshold
         path ld_ch
         path frqfile_ch
@@ -141,6 +157,7 @@ process PrepareHeritabilityEstimation {
     shell:
         variants_arg = (variants.name != 'NO_FILE') ? "--variants-file ${variants}" : ""
         phenotypes_formatted = genes.collect { "phenotype=$it" }.join("\n")
+        cohort_arg = (fromCohort != '') ? "--cohorts ${fromCohort}" : ""
         '''
         mkdir tmp_eqtls
         echo "!{phenotypes_formatted}" > file_matches.txt
@@ -151,6 +168,7 @@ process PrepareHeritabilityEstimation {
 
         extract_parquet_results.py \
             --input-file tmp_eqtls \
+            !{cohort_arg} \
             --variant-reference !{variantReference} \
             --genes !{genes.join(' ')} \
             --cols '+z_score,+p_value' \

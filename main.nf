@@ -7,9 +7,9 @@
 nextflow.enable.dsl = 2
 
 // import modules
-include { EstimateTransHeritabilityLdsc; EstimateTransHeritabilityLdsc as EstimatePolyHeritabilityLdsc; EstimateCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; ProcessLdscOutput as ProcessGwLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise; ProcessLdscDeleteVals; ProcessLdscDeleteVals as ProcessLdscDeleteValsGw } from './modules/EstimateHeritability'
+include { EstimateTransHeritabilityLdsc; EstimateTransHeritabilityLdsc as EstimatePolyHeritabilityLdsc; EstimateCisHeritabilityLdsc; EstimateConstrainedCisHeritabilityLdsc; ProcessLdscOutput as ProcessTransLdscOutput; ProcessLdscOutput as ProcessConstrainedCisLdscOutput; ProcessLdscOutput as ProcessCisLdscOutput; ProcessLdscOutput as ProcessGwLdscOutput; CountHeritabilitySnps; EstimateHeritabilityLdscAllPairwise; ProcessLdscDeleteVals; ProcessLdscDeleteVals as ProcessLdscDeleteValsGw } from './modules/EstimateHeritability'
 include { WriteOutRes } from './modules/WriteOutRes'
-include { PrepareHeritabilityEstimation } from './modules/CollectResults.nf'
+include { PrepareHeritabilityEstimation; Gunzip } from './modules/CollectResults.nf'
 include { ProcessVuckovicGwasData } from './modules/ProcessGwas.nf'
 
 def helpmessage() {
@@ -51,6 +51,7 @@ Mandatory arguments:
 }
 
 params.variants = 'NO_FILE'
+params.from_cohort = ''
 params.cols = '+z_score,+p_value'
 params.output
 
@@ -74,6 +75,8 @@ cohorts_ch = Channel.fromPath(params.mastertable)
     .ifEmpty { error "Cannot find master table from: ${params.mastertable}" }
     .splitCsv(header: true, sep: '\t', strip: true)
     .map{row -> [ row.cohort_new_name ]}
+
+from_cohort = params.from_cohort
 
 inclusion_step_output_ch = file(params.inclusion_step_output)
 one_kg_bed_ch = file(params.variants_bed)
@@ -120,7 +123,7 @@ workflow {
 
     PrepareHeritabilityEstimation(
         input_parquet_ch, variant_reference_ch, variants_ch, gene_reference_ch, inclusion_step_output_ch,
-        genes_buffered_ch, cohorts_ch.collect(), i_squared_threshold, ld_ch, frqfile_ch)
+        genes_buffered_ch, cohorts_ch.collect(), from_cohort, i_squared_threshold, ld_ch, frqfile_ch)
 
     polygenic_ch = PrepareHeritabilityEstimation.out.sumstats_transpolygenic
         .flatten()
@@ -141,7 +144,7 @@ workflow {
                return tuple(gene, file) }
 
     // List number of variants per gene
-    lead_effects_ch = PrepareHeritabilityEstimation.out.leads
+    lead_effects_ch = Gunzip(PrepareHeritabilityEstimation.out.leads)
         .collectFile(keepHeader: true, skip: 1, name: "lead_effect_variants.txt", storeDir: params.output)
 
     // Heritability SNPs
@@ -164,6 +167,9 @@ workflow {
     ldsc_cis_output_ch = EstimateCisHeritabilityLdsc(
         ldsc_cis_in_ch, ld_ch, frqfile_ch, weights_ch)
 
+    ldsc_constrainedcis_output_ch = EstimateConstrainedCisHeritabilityLdsc(
+        ldsc_cis_in_ch, ld_ch, frqfile_ch, weights_ch)
+
     ldsc_trans_output_ch = EstimateTransHeritabilityLdsc(
         ldsc_trans_in_ch, ld_ch, frqfile_ch, weights_ch)
 
@@ -171,6 +177,8 @@ workflow {
         ldsc_polygenic_in_ch, ld_ch, frqfile_ch, weights_ch)
 
     // Process LDSC logs
+    ldsc_cis_matrices_ch = ProcessConstrainedCisLdscOutput(ldsc_constrainedcis_output_ch)
+        .collectFile(name:'ldsc_table_constrainedcis.txt', skip: 1, keepHeader: true, storeDir: params.output)
     ldsc_cis_matrices_ch = ProcessCisLdscOutput(ldsc_cis_output_ch)
         .collectFile(name:'ldsc_table_cis.txt', skip: 1, keepHeader: true, storeDir: params.output)
     ldsc_trans_matrices_ch = ProcessTransLdscOutput(ldsc_trans_output_ch)
