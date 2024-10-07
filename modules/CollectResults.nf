@@ -128,7 +128,7 @@ process ProcessResults {
 
 
 process PrepareHeritabilityEstimation {
-    scratch true
+    scratch false
 
     input:
         path input
@@ -157,7 +157,7 @@ process PrepareHeritabilityEstimation {
     shell:
         variants_arg = (variants.name != 'NO_FILE') ? "--variants-file ${variants}" : ""
         phenotypes_formatted = genes.collect { "phenotype=$it" }.join("\n")
-        cohort_arg = (fromCohort != '') ? "--cohorts ${fromCohort}" : ""
+        cohort_arg = (fromCohort != '') ? "--cohort ${fromCohort}" : ""
         '''
         mkdir tmp_eqtls
         echo "!{phenotypes_formatted}" > file_matches.txt

@@ -44,6 +44,7 @@ __description__ = "{} is a program developed and maintained by {}. " \
 
 
 # Constants
+pd.set_option('display.max_columns', None)
 
 # Classes
 class MafCalculator:
@@ -266,11 +267,7 @@ def main(argv=None):
     print(args)
     print("Loading variant reference from '{}'".format(args.variant_reference))
 
-    variant_reference = (
-        pd.read_csv(args.variant_reference, sep=' ', dtype={'CHR': "Int64", 'bp': "Int64"})
-        .drop(["allele1", "allele2"], axis=1)
-        .rename({"ID": "variant", "bp": "bp_variant", "CHR": "chromosome_variant",
-                 "str_allele1": "allele_ref", "str_allele2": "allele_eff"}, axis=1))
+    variant_reference = pd.read_parquet(args.variant_reference).rename({"bp": "bp_variant"}, axis=1)
 
     print("Variant reference loaded:")
     print(variant_reference.head())
@@ -292,7 +289,7 @@ def main(argv=None):
     if per_cohort:
         sample_size_threshold = 0
         pass_sample_size_threshold = (eqtls.sample_size > sample_size_threshold)
-        
+
         print("Total theoretical sample size = {}".format(total_sample_size))
         print("Sample size threshold = {}".format(sample_size_threshold))
         print("Frequency of passed variants:")
@@ -433,10 +430,12 @@ def main(argv=None):
 
     # Perform method
     eqtls_annotated = (
-        eqtls_genes_filtered.set_index(["variant", "phenotype"])
-        .merge(variant_reference.set_index("variant"), how="inner", validate="m:1", left_index=True, right_index=True)
+        eqtls_genes_filtered.set_index(["variant_index", "phenotype"])
+        .merge(variant_reference.set_index("variant_index"), how="inner", validate="m:1", left_index=True, right_index=True)
         .merge(gene_dataframe.rename(columns={'gene_id': 'phenotype'},).set_index("phenotype"), how="inner", left_index=True, right_index=True,
-               suffixes=('', '_gene'), validate="m:1")).reset_index()
+               suffixes=('_variant', '_gene'), validate="m:1")).reset_index()
+
+    print(eqtls_annotated.head())
 
     clumper = Clumper(p_threshold=5e-8, window=cis_window_flank_size)
     lead_effects = (
@@ -467,7 +466,7 @@ def main(argv=None):
     selected_variants = eqtls_annotated.loc[eqtls_annotated.variant.isin(np.array(variant_list))]
 
     ldsc_selector = {"variant": "SNP", "sample_size": "N", "z_score": "Z", "p_value": "P",
-                     "beta": "BETA", "standard_error": "SE", "allele_eff": "A1", "allele_ref": "A2"}
+                     "beta": "BETA", "standard_error": "SE", "eff_allele": "A1", "non_eff_allele": "A2"}
 
     for gene, confined in selected_variants.groupby("phenotype"):
 

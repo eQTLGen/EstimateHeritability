@@ -62,7 +62,7 @@ if (params.help){
 
 //Default parameters
 Channel.fromPath(params.input).collect().set { input_parquet_ch }
-Channel.fromPath(params.genes).splitCsv(header: true).map { row -> "${row.ID}" }.randomSample( 1000, 234 ).set { genes_ch }
+Channel.fromPath(params.genes).splitCsv(header: ['gene']).map { row -> "${row.gene}" } .set { genes_ch }
 Channel.fromPath(params.variant_reference).collect().set { variant_reference_ch }
 Channel.fromPath(params.gene_reference).collect().set { gene_reference_ch }
 
@@ -78,7 +78,6 @@ one_kg_bed_ch = file(params.variants_bed)
 variants_ch = file(params.variants)
 hapmap_ch = file(params.hapmap)
 i_squared_threshold = 40
-onekg_gwas_by_subtraction_reference = Channel.fromPath("data/reference.1000G.maf.0.005.txt.gz").collect()
 
 ld_ch = Channel.fromPath(params.ld_w_dir, type: 'dir').collect()
 frqfile_ch = Channel.fromPath(params.frqfile_dir, type: 'dir').collect()
@@ -192,7 +191,7 @@ workflow {
         ldsc_polygenic_output_ch.map { name, gws, file, del -> del }.collect(),
         ldsc_polygenic_matrices_ch, "polygenic")
 
-    // WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
+    //WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
 }
 
 workflow.onComplete {
