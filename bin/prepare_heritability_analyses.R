@@ -155,7 +155,7 @@ main <- function(argv = NULL) {
     ) %>%
     ungroup()
 
-  ldsc_selector <- c("variant"= "SNP", "sample_size"= "N", "z_score"= "Z", "eff_allele"= "A1", "non_eff_allele"= "A2")
+  ldsc_selector <- c("SNP"="variant", "N"="sample_size", "Z"="z_score", "A1"="eff_allele", "A2"="non_eff_allele")
 
   # For every gene, extract the variants of interest
   for (gene in gene_ref_df$gene_id) {
@@ -177,17 +177,17 @@ main <- function(argv = NULL) {
     summary_stats <- summary_stats %>% filter(between(sample_size, mean_sample_size * 0.9, mean_sample_size * 1.1))
 
     trans_summary_stats <- summary_stats %>% filter(variant_index %in% trans_variants) %>%
-      select(ldsc_selector)
+      select(all_of(ldsc_selector))
 
     polygenic_summary_stats <- summary_stats %>%
       filter(
         variant_index %in% trans_variants,
         !variant_index %in% qtl_variants_focal_gene
-      ) %>% select(ldsc_selector)
+      ) %>% select(all_of(ldsc_selector))
 
     fwrite(trans_summary_stats, sprintf("%s.sumstats_hm3.trans_all.csv.gz", gene), row.names = FALSE)
     fwrite(polygenic_summary_stats, sprintf("%s.sumstats_hm3.trans_polygenic.csv.gz", gene), row.names = FALSE)
-    fwrite(summary_stats %>% select(ldsc_selector), sprintf("%s.sumstats_hm3.gw_polygenic.csv.gz", gene), row.names = FALSE)
+    fwrite(summary_stats %>% select(all_of(ldsc_selector)), sprintf("%s.sumstats_hm3.gw_polygenic.csv.gz", gene), row.names = FALSE)
   }
 
   # Annotate those variants that
