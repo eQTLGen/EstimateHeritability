@@ -6,6 +6,7 @@ library(arrow)
 library(tidyverse)
 library(data.table)
 library(argparse)
+library(rtracklayer)
 
 
 # Declare constants
@@ -74,6 +75,9 @@ main <- function(argv = NULL) {
   # Process input
   args <- parser$parse_args(argv)
 
+  # Gene reference
+  gene_ref <- rtracklayer::import("/Users/cawarmerdam/Documents/projects/eQTLGen/public_data/Homo_sapiens.GRCh38.106.gtf.gz")
+
   # eQTL dataset
   eqtl_ds <- arrow::open_dataset(args$input)
   genes <- args$genes
@@ -87,9 +91,6 @@ main <- function(argv = NULL) {
   hm3_variant_ref <- variant_reference %>%
     filter(variant %in% variant_dt$variant) %>%
     rename(variant_chr = chromosome, variant_pos = bp)
-
-  # Gene reference
-  gene_ref <- rtracklayer::import("/Users/cawarmerdam/Documents/projects/eQTLGen/public_data/Homo_sapiens.GRCh38.106.gtf.gz")
 
   # Save gene reference as df
   gene_ref_df <- as.data.frame(gene_ref) %>%
