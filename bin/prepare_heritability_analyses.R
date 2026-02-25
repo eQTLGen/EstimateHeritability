@@ -86,7 +86,7 @@ main <- function(argv = NULL) {
 
   hm3_variant_ref <- variant_reference %>%
     filter(variant %in% variant_dt$variant) %>%
-    rename(variant_chr = chromosome, variant_pos = position)
+    rename(variant_chr = chromosome, variant_pos = bp)
 
   # Gene reference
   gene_ref <- rtracklayer::import("/Users/cawarmerdam/Documents/projects/eQTLGen/public_data/Homo_sapiens.GRCh38.106.gtf.gz")
