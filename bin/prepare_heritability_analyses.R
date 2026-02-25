@@ -124,8 +124,8 @@ main <- function(argv = NULL) {
   lead_trans_effects <- lead_variants %>%
     left_join(gene_windows, by = c("phenotype" = "gene_id")) %>%
     mutate(
-      lead_start = pmax(start - polygenic_window, 1),
-      lead_end = end + polygenic_window)
+      lead_start = pmax(bp - polygenic_window, 1),
+      lead_end = bp + polygenic_window)
 
   lead_bed_file <- "polygenic.bed"
   write_bed(lead_trans_effects, lead_bed_file, start_col = "lead_start", end_col = "lead_end")
