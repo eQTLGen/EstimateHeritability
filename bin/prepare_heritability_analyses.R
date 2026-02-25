@@ -49,7 +49,7 @@ get_variants_in_qtl_windows <- function(lead_trans_effects, hm3_variant_ref) {
   print(head(qtl_variants))
 
   qtl_variants_summarised <- qtl_variants[
-    , .(variants = list(variant)),
+    , .(variants = list(variant_id)),
       by = phenotype
   ]
 
@@ -91,7 +91,7 @@ main <- function(argv = NULL) {
 
   hm3_variant_ref <- variant_reference %>%
     filter(variant %in% variant_dt$variant) %>%
-    rename(variant_chr = chromosome, variant_pos = bp)
+    rename(variant_chr = chromosome, variant_pos = bp, variant_id = variant)
 
   # Save gene reference as df
   gene_ref_df <- as.data.frame(gene_ref) %>%
@@ -160,11 +160,10 @@ main <- function(argv = NULL) {
   # For every gene, extract the variants of interest
   for (gene in gene_ref_df$gene_id) {
     gene_data <- gene_ref_df %>% filter(gene_id == gene)
-    qtl_variants_focal_gene <- qtl_variants %>% filter(phenotype == gene) %>% pull(variants)
+    qtl_variants_focal_gene <- unlist(qtl_variants %>% filter(phenotype == gene) %>% pull(variants_id))
 
     cis_variants <- unlist(gene_data$cis_variants)
     trans_variants <- unlist(gene_data$trans_variants)
-    get_variants_in_qtl_windows <- unlist(gene_)
 
     summary_stats <- eqtl_ds %>% filter(
       phenotype == gene_data$gene_id,
