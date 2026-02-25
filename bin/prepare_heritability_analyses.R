@@ -17,15 +17,42 @@ polygenic_window <- 5e6
 # Basic LD Score Estimation Flags'
 # Filtering / Data Management for LD Score
 parser$add_argument('--input', default=NULL, type="character", nargs="+")
-parser$add_argument('--lead_variants', default=NULL, type="character")
-parser$add_argument('--variant_reference', default=NULL, type="character")
-parser$add_argument('--variant_list', default=NULL, type="character")
-parser$add_argument('--gene', default=NULL, type="character", nargs="4")
-parser$add_argument('--i2_max', default=NULL, type="numeric")
-parser$add_argument('--n_min', default=NULL, type="integer")
-parser$add_argument('--gene_reference', default=NULL, type="character")
+parser$add_argument('--lead-variants', default=NULL, type="character")
+parser$add_argument('--variant-reference', default=NULL, type="character")
+parser$add_argument('--variant-list', default=NULL, type="character")
+parser$add_argument('--genes', default=NULL, type="character", nargs="+")
+parser$add_argument('--n-min', default=NULL, type="integer")
+parser$add_argument('--gene-reference', default=NULL, type="character")
 
+get_variants_in_qtl_windows <- function(lead_trans_effects, hm3_variant_ref) {
 
+  setDT(lead_trans_effects)
+  setDT(hm3_variant_ref)
+
+  # prepare
+  hm3_variant_ref[, chromosome := variant_chr]
+  hm3_variant_ref[, start := variant_pos]
+  hm3_variant_ref[, end := variant_pos]
+
+  setkey(hm3_variant_ref, chromosome, start, end)
+  setkey(lead_trans_effects, chromosome, lead_start, lead_end)
+
+  # exclude variants
+  qtl_variants <- foverlaps(
+    hm3_variant_ref,
+    lead_trans_effects,
+    by.x=c("chromosome","start","end"),
+    by.y=c("chromosome","lead_start","lead_end"),
+    nomatch=0
+  )
+
+  qtl_variants_summarised <- qtl_variants[
+    , .(variants = list(variant_id)),
+      by = gene_id
+  ]
+
+  return(qtl_variants_summarised)
+}
 
 # Declare function definitions
 write_bed <- function(df, filename, chrom_col = "chromosome", start_col = "start", end_col = "end", gene_col = "gene_id") {
@@ -49,15 +76,12 @@ main <- function(argv = NULL) {
 
   # eQTL dataset
   eqtl_ds <- arrow::open_dataset(args$input)
-  gene_list <- eqtl_ds %>% distinct(phenotype)
+  genes <- args$genes
 
   # Variant list
-  variant_dt <- fread("/Users/cawarmerdam/Documents/projects/eQTLGen/freeze3/Interpretation/heritability/EstimateHeritability/data/matching_unambiguous_hapmap_variants.txt",
-                      col.names = c("variant"))
   variant_dt <- fread(args$variant_list, col.names = c("variant"))
 
   # Variant reference
-  variant_reference <- arrow::read_parquet("/Users/cawarmerdam/Documents/projects/eQTLGen/processed_data/variants/1000G-30x_index.parquet")
   variant_reference <- arrow::read_parquet(args$variant_reference)
 
   hm3_variant_ref <- variant_reference %>%
@@ -69,7 +93,7 @@ main <- function(argv = NULL) {
 
   # Save gene reference as df
   gene_ref_df <- as.data.frame(gene_ref) %>%
-    filter(type == "gene", gene_id %in% gene_list) %>%
+    filter(type == "gene", gene_id %in% genes) %>%
     select(gene_id, start, end, seqnames, gene_name) %>%
     filter(seqnames %in% c(1:22, "X", "Y", "XY", "MT")) %>%
     mutate(chromosome = as.integer(case_when(seqnames == "X" ~ "23",
@@ -105,6 +129,8 @@ main <- function(argv = NULL) {
   lead_bed_file <- "polygenic.bed"
   write_bed(lead_trans_effects, lead_bed_file, start_col = "lead_start", end_col = "lead_end")
 
+  qtl_variants <- get_variants_in_qtl_windows(lead_trans_effects, hm3_variant_ref)
+
   # For all windows, get the correct variant set from the variant index
   gene_ref_df <- gene_windows %>% rowwise() %>%
     mutate(
@@ -132,9 +158,11 @@ main <- function(argv = NULL) {
   # For every gene, extract the variants of interest
   for (gene in gene_ref_df$gene_id) {
     gene_data <- gene_ref_df %>% filter(gene_id == gene)
+    qtl_variants_focal_gene <- qtl_variants %>% filter(gene_id == gene) %>% pull(variants)
 
     cis_variants <- unlist(gene_data$cis_variants)
     trans_variants <- unlist(gene_data$trans_variants)
+    get_variants_in_qtl_windows <- unlist(gene_)
 
     summary_stats <- eqtl_ds %>% filter(
       phenotype == gene_data$gene_id,
@@ -150,7 +178,14 @@ main <- function(argv = NULL) {
     trans_summary_stats <- summary_stats %>% filter(variant_index %in% trans_variants) %>%
       select(ldsc_selector)
 
+    polygenic_summary_stats <- summary_stats %>%
+      filter(
+        variant_index %in% trans_variants,
+        !variant_index %in% qtl_variants_focal_gene
+      ) %>% select(ldsc_selector)
+
     fwrite(trans_summary_stats, sprintf("%s.sumstats_hm3.trans_all.csv.gz", gene), row.names = FALSE)
+    fwrite(polygenic_summary_stats, sprintf("%s.sumstats_hm3.gw_polygenic.csv.gz", gene), row.names = FALSE)
     fwrite(summary_stats %>% select(ldsc_selector), sprintf("%s.sumstats_hm3.global_all.csv.gz", gene), row.names = FALSE)
   }
 

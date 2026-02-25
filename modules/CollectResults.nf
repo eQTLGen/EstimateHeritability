@@ -132,13 +132,11 @@ process PrepareHeritabilityEstimation {
 
     input:
         path input
+        path eqtls
         path variantReference
         path variants
         path geneReference
-        path inclusionDir
         val genes
-        val cohorts
-        val fromCohort
         val isqThreshold
         path ld_ch
         path frqfile_ch
@@ -147,16 +145,12 @@ process PrepareHeritabilityEstimation {
         path "*.sumstats_hm3.trans_polygenic.csv.gz", emit: sumstats_transpolygenic, optional:true
         path "*.sumstats_hm3.gw_polygenic.csv.gz", emit: sumstats_polygenic, optional:true
         path "*.sumstats_hm3.trans_all.csv.gz", emit: sumstats_trans, optional:true
-        path "*.sumstats_hm3.cis_all.csv.gz", emit: sumstats_cis, optional:true
-        path "M_5_50.cis.txt", emit: cis_variants
         path "M_5_50.trans.txt", emit: trans_variants
         path "M_5_50.polygenic.txt", emit: polygenic_variants
         path "M_5_50.transpolygenic.txt", emit: transpolygenic_variants
 
     shell:
-        variants_arg = (variants.name != 'NO_FILE') ? "--variants-file ${variants}" : ""
         phenotypes_formatted = genes.collect { "phenotype=$it" }.join("\n")
-        cohort_arg = (fromCohort != '') ? "--cohort ${fromCohort}" : ""
         '''
         mkdir tmp_eqtls
         echo "!{phenotypes_formatted}" > file_matches.txt
@@ -165,23 +159,14 @@ process PrepareHeritabilityEstimation {
           cp -r "!{input}/${gene}" tmp_eqtls/
         done <file_matches.txt
 
-        extract_parquet_results.py \
-            --input-file tmp_eqtls \
-            !{cohort_arg} \
+        prepare_heritability_analyses.R \
+            --input tmp_eqtls \
+            --lead-variants !{eqtls} \
             --variant-reference !{variantReference} \
+            --variant-list !{variants} \
             --genes !{genes.join(' ')} \
-            --cols '+z_score,+p_value' \
-            --output-prefix extracted
-
-        annotate_loci.py \
-            --input-file extracted.out.csv \
-            --cohorts !{cohorts.join(' ')} \
-            --inclusion-path !{inclusionDir} \
-            --variant-reference !{variantReference} \
-            !{variants_arg} \
-            --gene-ref !{geneReference} \
-            --out-prefix annotated.!{genes.join("_")} \
-            --i2-threshold !{isqThreshold}
+            --n-min 38970 \
+            --gene-reference !{geneReference}
 
         cat "trans.bed" "polygenic.bed" > "transpolygenic.bed"
 
