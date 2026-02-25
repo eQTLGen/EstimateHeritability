@@ -168,7 +168,8 @@ main <- function(argv = NULL) {
     summary_stats <- eqtl_ds %>% filter(
       phenotype == gene_data$gene_id,
       variant_index %in% hm3_variant_ref$variant_index) %>% collect() %>%
-      inner_join(hm3_variant_ref, by = "variant_index")
+      inner_join(hm3_variant_ref, by = "variant_index") %>%
+      mutate(z_score = beta / standard_error)
 
     print(summary_stats)
 
