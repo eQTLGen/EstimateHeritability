@@ -48,7 +48,7 @@ get_variants_in_qtl_windows <- function(lead_trans_effects, hm3_variant_ref) {
 
   qtl_variants_summarised <- qtl_variants[
     , .(variants = list(variant_id)),
-      by.x = phenotype
+      by = phenotype
   ]
 
   return(qtl_variants_summarised)
