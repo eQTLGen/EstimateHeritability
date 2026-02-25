@@ -120,9 +120,8 @@ main <- function(argv = NULL) {
 
   # For each gene, get lead trans effects and write to BED
   lead_variants <- fread(args$lead_variants)
-  #lead_variants <- fread("/Users/cawarmerdam/Documents/projects/eQTLGen/freeze3/Interpretation/cis-trans-coloc/input/subset_p5e8_hyprColocFormat_2024-09-05.csv.gz")
   lead_trans_effects <- lead_variants %>%
-    left_join(gene_windows, by = c("phenotype" = "gene_id")) %>%
+    semi_join(gene_windows, by = c("phenotype" = "gene_id")) %>%
     mutate(
       lead_start = pmax(bp - polygenic_window, 1),
       lead_end = bp + polygenic_window)
