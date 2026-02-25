@@ -155,7 +155,7 @@ main <- function(argv = NULL) {
     ) %>%
     ungroup()
 
-  ldsc_selector <- c("SNP"="variant", "N"="sample_size", "Z"="z_score", "A1"="eff_allele", "A2"="non_eff_allele")
+  ldsc_selector <- c("SNP"="variant_id", "N"="sample_size", "Z"="z_score", "A1"="eff_allele", "A2"="non_eff_allele")
 
   # For every gene, extract the variants of interest
   for (gene in gene_ref_df$gene_id) {
@@ -170,9 +170,11 @@ main <- function(argv = NULL) {
       variant_index %in% hm3_variant_ref$variant_index) %>%
       inner_join(hm3_variant_ref, by = "variant_index")
 
+    print(summary_stats)
+
     mean_sample_size <- mean(summary_stats$sample_size, na.rm=T)
-    sd_sample_size <- sd(summary_stats$sample_size, na.rm=T)
-    max_sample_size <- max(summary_stats$sample_size, na.rm=T)
+      sd_sample_size <- sd(summary_stats$sample_size, na.rm=T)
+      max_sample_size <- max(summary_stats$sample_size, na.rm=T)
 
     summary_stats <- summary_stats %>% filter(between(sample_size, mean_sample_size * 0.9, mean_sample_size * 1.1))
 
