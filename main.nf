@@ -67,9 +67,7 @@ Channel.fromPath(params.genes).splitCsv(header: ['gene']).map { row -> "${row.ge
 Channel.fromPath(params.variant_reference).collect().set { variant_reference_ch }
 Channel.fromPath(params.gene_reference).collect().set { gene_reference_ch }
 
-one_kg_bed_ch = file(params.variants_bed)
 variants_ch = file(params.variants)
-hapmap_ch = file(params.hapmap)
 
 ld_ch = Channel.fromPath(params.ld_w_dir, type: 'dir').collect()
 frqfile_ch = Channel.fromPath(params.frqfile_dir, type: 'dir').collect()
