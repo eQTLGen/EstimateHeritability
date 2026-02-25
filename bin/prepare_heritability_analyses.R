@@ -185,8 +185,14 @@ main <- function(argv = NULL) {
     polygenic_summary_stats <- summary_stats %>%
       filter(
         variant_index %in% trans_variants,
-        !variant_index %in% qtl_variants_focal_gene
+        !variant_id %in% qtl_variants_focal_gene
       ) %>% select(all_of(ldsc_selector))
+
+    print(gene)
+    print(length(qtl_variants_focal_gene))
+    print(nrow(trans_summary_stats))
+    print(nrow(polygenic_summary_stats))
+    print(nrow(summary_stats))
 
     fwrite(trans_summary_stats, sprintf("%s.sumstats_hm3.trans_all.csv.gz", gene), row.names = FALSE)
     fwrite(polygenic_summary_stats, sprintf("%s.sumstats_hm3.trans_polygenic.csv.gz", gene), row.names = FALSE)
