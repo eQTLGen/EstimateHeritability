@@ -67,24 +67,15 @@ Channel.fromPath(params.genes).splitCsv(header: ['gene']).map { row -> "${row.ge
 Channel.fromPath(params.variant_reference).collect().set { variant_reference_ch }
 Channel.fromPath(params.gene_reference).collect().set { gene_reference_ch }
 
-cohorts_ch = Channel.fromPath(params.mastertable)
-    .ifEmpty { error "Cannot find master table from: ${params.mastertable}" }
-    .splitCsv(header: true, sep: '\t', strip: true)
-    .map{row -> [ row.cohort_new_name ]}
-
-from_cohort = params.from_cohort
-
-inclusion_step_output_ch = file(params.inclusion_step_output)
 one_kg_bed_ch = file(params.variants_bed)
 variants_ch = file(params.variants)
 hapmap_ch = file(params.hapmap)
-i_squared_threshold = 40
 
 ld_ch = Channel.fromPath(params.ld_w_dir, type: 'dir').collect()
 frqfile_ch = Channel.fromPath(params.frqfile_dir, type: 'dir').collect()
 weights_ch = Channel.fromPath(params.weights_dir, type: 'dir').collect()
 
-gene_chunk_size=1
+gene_chunk_size=10
 
 log.info """=================================================
 Estimate heritability v${workflow.manifest.version}"
@@ -118,7 +109,7 @@ workflow {
 
     PrepareHeritabilityEstimation(
         input_parquet_ch, eqtls_ch, variant_reference_ch, variants_ch, gene_reference_ch,
-        genes_buffered_ch, i_squared_threshold, ld_ch, frqfile_ch)
+        genes_buffered_ch, ld_ch, frqfile_ch)
 
     polygenic_ch = PrepareHeritabilityEstimation.out.sumstats_transpolygenic
         .flatten()
