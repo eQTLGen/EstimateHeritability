@@ -137,7 +137,6 @@ process PrepareHeritabilityEstimation {
         path variants
         path geneReference
         val genes
-        val isqThreshold
         path ld_ch
         path frqfile_ch
 
