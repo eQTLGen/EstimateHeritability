@@ -148,7 +148,6 @@ process PrepareHeritabilityEstimation {
         path "*.sumstats_hm3.gw_polygenic.csv.gz", emit: sumstats_polygenic, optional:true
         path "*.sumstats_hm3.trans_all.csv.gz", emit: sumstats_trans, optional:true
         path "*.sumstats_hm3.cis_all.csv.gz", emit: sumstats_cis, optional:true
-        path "lead_variants.csv.gz", emit: leads
         path "M_5_50.cis.txt", emit: cis_variants
         path "M_5_50.trans.txt", emit: trans_variants
         path "M_5_50.polygenic.txt", emit: polygenic_variants

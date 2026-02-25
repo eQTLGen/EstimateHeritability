@@ -29,13 +29,133 @@ theme_update(
   title = element_text(colour = "#595A5C", face = "bold"),
 )
 
+project_folder_location <- "~/Documents/projects"
+
 expected_column_names <- c("p1", "p2", "rg", "se", "z", "p", "h2_obs", "h2_obs_se", "h2_int", "h2_int_se", "gcov_int", "gcov_int_se", "gene", "annot")
 
-mr_genes <- fread("/gpfs/space/GI/eQTLGen/freeze2/eqtl_mapping/input/mr_GenesToInclude_2023-07-14.txt")
-sampled_genes <- fread("/gpfs/space/GI/eQTLGen/freeze2/eqtl_mapping/input/sampled1K_and_mr_GenesToInclude_2023-10-05.txt")
+mr_genes <- fread(file.path(project_folder_location, "eQTLGen/freeze2/eqtl_mapping/input/mr_GenesToInclude_2023-07-14.txt"))
+sampled_genes <- fread(file.path(project_folder_location, "eQTLGen/freeze2/eqtl_mapping/input/sampled1K_and_mr_GenesToInclude_2023-10-05.txt"))
+
+sampled_genes <- sampled_genes %>% filter(!ID %in% mr_genes$ID)
 ```
 
 ```{r, message = FALSE, warning = FALSE, echo = FALSE}
+#' Function for Rb analysis
+#'
+#' @param b1 Beta from first dataset.
+#' @param se1 Standard error of beta from first dataset.
+#' @param b2 Beta from second dataset.
+#' @param se2 Standard error of beta from second dataset.
+#' @param theta Variable representing sample overlap between two datasets. Should be set 0 if no sample overlap.
+#'
+#' @return Data frame with Rb, SE(Rb) and corresponding P-value.
+#' @export
+#'
+#' @note This function is slightly adapted from the script shared by Ting Qi.
+#'
+#' @examples
+calcu_cor_true <- function(b1, se1, b2, se2, theta) {
+  idx <- which(is.infinite(b1) | is.infinite(b2) | is.infinite(se1) | is.infinite(se2))
+  if (length(idx) > 0) {
+    b1 <- b1[-idx]
+    se1 <- se1[-idx]
+    b2 <- b2[-idx]
+    se2 <- se2[-idx]
+    theta <- theta[-idx]
+  }
+
+  var_b1 <- var(b1, na.rm = T) - mean(se1^2, na.rm = T)
+  var_b2 <- var(b2, na.rm = T) - mean(se2^2, na.rm = T)
+  if (var_b1 < 0) {
+    var_b1 <- var(b1, na.rm = T)
+  }
+  if (var_b2 < 0) {
+    var_b2 <- var(b2, na.rm = T)
+  }
+  cov_b1_b2 <- cov(b1, b2, use = "complete.obs") - mean(theta, na.rm = T) * sqrt(mean(se1^2, na.rm = T) * mean(se2^2, na.rm = T))
+  r <- cov_b1_b2 / sqrt(var_b1 * var_b2)
+
+  r_jack <- c()
+  n <- length(b1)
+  for (k in 1:n) {
+    b1_jack <- b1[-k]
+    se1_jack <- se1[-k]
+    var_b1_jack <- var(b1_jack, na.rm = T) - mean(se1_jack^2, na.rm = T)
+    b2_jack <- b2[-k]
+    se2_jack <- se2[-k]
+    var_b2_jack <- var(b2_jack, na.rm = T) - mean(se2_jack^2, na.rm = T)
+    if (var_b1_jack < 0) {
+      var_b1_jack <- var(b1_jack, na.rm = T)
+    }
+    if (var_b2_jack < 0) {
+      var_b2_jack <- var(b2_jack, na.rm = T)
+    }
+    theta_jack <- theta[-k]
+    cov_e1_jack_e2_jack <- mean(theta_jack, na.rm = T) * sqrt(mean(se1_jack^2, na.rm = T) * mean(se2_jack^2, na.rm = T))
+    cov_b1_b2_jack <- cov(b1_jack, b2_jack, use = "complete.obs") - cov_e1_jack_e2_jack
+    r_tmp <- cov_b1_b2_jack / sqrt(var_b1_jack * var_b2_jack)
+    r_jack <- c(r_jack, r_tmp)
+  }
+  r_mean <- mean(r_jack, na.rm = T)
+  idx <- which(is.na(r_jack))
+  if (length(idx) > 0) {
+    se_r <- sqrt((n - 1) / n * sum((r_jack[-idx] - r_mean)^2))
+  } else {
+    se_r <- sqrt((n - 1) / n * sum((r_jack - r_mean)^2))
+  }
+
+  p <- pchisq((r / se_r)**2, df = 1, lower.tail = FALSE)
+
+  res <- cbind(r, se_r, p)
+  colnames(res) = c("r", "se_r", "p")
+  return(res)
+}
+
+get_h2_table <- function(base_path) {
+  input_path_cis <- file.path(base_path, "ldsc_table_cis.txt")
+  input_path_trans <- file.path(base_path, "ldsc_table_trans.txt")
+  input_path_gw <- file.path(base_path, "ldsc_table_polygenic.txt")
+
+  input_path_lead_vars <- file.path(base_path, "lead_effect_variants.txt")
+
+  input_path_dt_trans <- file.path(base_path, "delete_values_combined_trans.tsv")
+  input_path_dt_gw <- file.path(base_path, "delete_values_combined_polygenic.tsv")
+
+  delete_values_trans <- fread(input_path_dt_trans, data.table = F) %>%
+          summarise(across(everything(), list)) %>%
+          pivot_longer(cols = everything(), names_to="gene_id", values_to="delete_vals")
+
+  if (file.exists(input_path_dt_gw)) {
+    delete_values_gw <- fread(input_path_dt_gw, data.table = F) %>%
+            summarise(across(everything(), list)) %>%
+            pivot_longer(cols = everything(), names_to="gene_id", values_to="delete_vals")
+  }
+
+  h2_table_cis <- fread(input_path_cis) %>%
+          mutate(marker_gene = gene_id %in% mr_genes$ID)
+  h2_table_trans <- fread(input_path_trans) %>%
+          mutate(marker_gene = gene_id %in% mr_genes$ID) %>%
+          inner_join(delete_values_trans, by = "gene_id")
+  if (file.exists(input_path_gw)) {
+    h2_table_gw <- fread(input_path_gw) %>%
+            mutate(marker_gene = gene_id %in% mr_genes$ID) %>%
+            inner_join(delete_values_gw, by = "gene_id")
+  }
+
+  if (file.exists(input_path_lead_vars)) {
+    lead_effect_variants <- fread(input_path_lead_vars) %>%
+            mutate(annot = ifelse(chromosome_variant == chromosome_gene & between(bp_variant, trans_upstream, trans_downstream),
+                                  "cis", "trans")) %>%
+            select(variant, phenotype, annot)
+  }
+
+  h2_table_concat <- bind_rows(list("cis" = h2_table_cis, "trans" = h2_table_trans), .id = "annot") %>%
+          mutate(h2_z = h2_obs / h2_obs_se, h2_p = pnorm(q=h2_z, lower.tail=FALSE)) %>%
+          mutate(marker_gene = gene_id %in% mr_genes$ID)
+
+  return(h2_table_concat)
+}
+
 gamma_moments_of_methods <- function(h2_obs, h2_obs_se) {
   median_squared_se <- median(h2_obs_se)^2
   print(median_squared_se)
@@ -63,13 +183,13 @@ standard_errors_gw <- function(delete_values, mean_hsq) {
 ```
 
 ```{r}
-median_exp_summary <- "/gpfs/space/GI/eQTLGen/freeze2/PreMetaQc/output/ExpMedianZSummary_2023-11-13.txt.gz"
+median_exp_summary <- file.path(project_folder_location, "eQTLGen/freeze2/PreMetaQc/output/ExpMedianZSummary_2023-11-13.txt.gz")
 exp <- fread(median_exp_summary) %>%
   pivot_longer(cols = -gene, names_to = "cohort", values_to = "median_exp") %>%
   group_by(gene) %>%
   summarise(median_exp = median(median_exp, na.rm=T))
 
-gnomad_conservation <- fread("/gpfs/space/GI/eQTLGen/freeze2/Interpretation/heritability/data/gnomad.v4.0.constraint_metrics.tsv")
+gnomad_conservation <- fread(file.path(project_folder_location, "eQTLGen/freeze2/Interpretation/heritability/data/gnomad.v4.0.constraint_metrics.tsv"))
 
 library(biomaRt)
 mart <- useMart(biomart = "ensembl", dataset = "hsapiens_gene_ensembl")
@@ -85,26 +205,21 @@ gene_annotations <- gnomad_conservation %>% inner_join(results, by=c("transcript
 ```
 
 ```{r, message = FALSE, warning = FALSE, echo = FALSE}
-input_path_cis <- "ldsc_table_cis.txt"
-input_path_trans <- "ldsc_table_trans.txt"
-input_path_gw <- "ldsc_table_gw.txt"
+base_path <- file.path(project_folder_location, "eQTLGen/freeze3/Interpretation/heritability/output/RNAseq1_empirical_4GenPC20ExpPC_2024-04-19")
+base_path <- file.path(project_folder_location, "eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2024-03-27_RNAseq2")
+base_path <- file.path(project_folder_location, "eQTLGen/freeze2/Interpretation/heritability/output_empirical_4GenPC20ExpPC_2024-03-27_RNAseqAll")
 
-input_path_dt_trans <- "delete_values_combined_trans.tsv"
-input_path_dt_gw <- "delete_values_combined_gw.tsv"
+analysis_vector <- c(
+  "rnaseq1"="../RNAseq1_empirical_4GenPC20ExpPC_2024-04-19",
+  "rnaseq2"="../RNAseq2_empirical_4GenPC20ExpPC_2024-04-19",
+  "rnaseqall"="../RNAseqAll_empirical_4GenPC20ExpPC_2024-04-19"
+)
 
-h2_table_cis <- fread(input_path_cis) %>%
-  mutate(marker_gene = gene_id %in% mr_genes$ID)
-h2_table_trans <- fread(input_path_trans) %>%
-  mutate(marker_gene = gene_id %in% mr_genes$ID)
-h2_table_gw <- fread(input_path_gw) %>%
-  mutate(marker_gene = gene_id %in% mr_genes$ID)
+analysis_vector <- c("rnaseq2"=file.path(project_folder_location,"eQTLGen/freeze3/Interpretation/heritability/output/RNAseq2_EUR_empirical_4GenPCNoExpPC_2024-05-22"))
 
+h2_table_concat <- bind_rows(mapply(function(base_path) get_h2_table(base_path), analysis_vector, SIMPLIFY=F, USE.NAMES=T), .id="analysis") %>%
+        mutate(gene_subset = case_when(gene_id %in% sampled_genes$ID ~ "sampled", marker_gene ~ "marker_gene", TRUE ~ "top_bottom"))
 
-delete_values_trans <- fread(input_path_dt_trans, data.table = F)
-delete_values_gw <- fread(input_path_dt_gw, data.table = F)
-
-h2_table_concat <- bind_rows(list("cis" = h2_table_cis, "trans" = h2_table_trans, "gw" = h2_table_gw), .id = "annot") %>%
-  mutate(h2_z = h2_obs / h2_obs_se, h2_p = pnorm(q=h2_z, lower.tail=FALSE))
 
 h2_dist <- h2_table_concat %>% filter(!marker_gene) %>% group_by(annot) %>%
   summarise(gamma = list(gamma_moments_of_methods(h2_obs, h2_obs_se))) %>%
@@ -113,24 +228,48 @@ h2_dist <- h2_table_concat %>% filter(!marker_gene) %>% group_by(annot) %>%
   group_by(annot) %>%
   mutate(density = dgamma(h2_obs, scale=theta, shape=k))
 
-h2_table_summary <- h2_table_concat %>% group_by(annot, marker_gene) %>%
+lead_effects <- fread(file.path(project_folder_location, "eQTLGen/freeze3/Interpretation/heritability/output/RNAseq2_EUR_empirical_4GenPCNoExpPC_2024-05-22/lead_effect_variants.txt"))
+
+lead_effects_summarised <- lead_effects %>% group_by(phenotype) %>% summarise(n_effects = n())
+
+
+
+
+h2_table_summary <- h2_table_concat %>%
+  complete(gene_id, analysis, annot) %>%
+  group_by(gene_id) %>%
+  filter(all(!is.na(h2_obs))) %>%
+  group_by(across(any_of(c("annot", "gene_subset", "analysis")))) %>%
   summarise(
       n_genes = length(unique(gene_id)),
       mean_h2 = mean(h2_obs),
+      mean_h2 = mean(h2_obs),
       median_h2 = median(h2_obs),
-      over_not = sum(h2_p < 0.05),
       h2_se = first(case_when(
           annot == "cis" ~ jackknife(h2_obs, mean)$jack.se,
-          annot == "trans" ~ standard_errors_gw(delete_values_trans[,c(gene_id)], mean(h2_obs)),
-          annot == "gw" ~ standard_errors_gw(delete_values_gw[,c(gene_id)], mean(h2_obs)))))
+          annot == "trans" ~
+                  ifelse(annot != "cis",
+                         standard_errors_gw(t(do.call(rbind, delete_vals)), mean(h2_obs)), 0))))
 
-p <- ggplot(h2_table_concat %>% filter(!marker_gene), aes(h2_obs)) +
-  geom_histogram(aes(y = after_stat(density))) +
-  geom_line(data = h2_dist, aes(x=h2_obs, y=density), color = "#D55E00") +
-  facet_wrap(vars(annot), scales="free_y", ncol = 2) +
-  coord_cartesian(ylim = c(0, 10), xlim = c(NA, 1))
 
-ggsave("distributions_h2_11-14_trans.pdf", p, width = 4, height = 4)
+p <- ggplot(h2_table_concat %>% filter(gene_subset=="sampled"), aes(h2_obs)) +
+  geom_histogram(aes(y = after_stat(density)), binwidth = 0.05) +
+  facet_grid(rows=vars(annot),cols=vars(analysis), scales="free_y") +
+  coord_cartesian(ylim = c(0, 10), xlim = c(-0.2, 1))
+
+ggsave(file.path(base_path, "comparison_h2_rnaseq.png"), p, width = 6, height = 4)
+
+h2_table_concat_joined <- h2_table_concat %>% pivot_wider(id_cols = c(gene_id, annot, marker_gene), values_from=c("h2_obs", "h2_int", "h2_obs_se", "h2_z"), names_from=c("analysis"))
+
+h2_table_concat_joined <- inner_join(h2_table_concat, lead_effects_summarised, by =c("gene_id"="phenotype"))
+
+p <- ggplot(h2_table_concat_joined, aes(x=n_effects, y=h2_obs)) +
+        geom_jitter(shape=16, width=0.4, height=0) +
+        geom_smooth(method=lm) +
+        facet_wrap(vars(annot), scales="free_y", ncol = 1) +
+        coord_cartesian(ylim = c(-0.2, 1))
+
+ggsave("scatterplot_h2_20240502_trans_rnaseq2.png", p, width = 5, height = 4)
 
 h2_table_concat_annot <- h2_table_concat %>% inner_join(exp, by = c("gene_id"="gene")) %>% filter(!marker_gene)
 
@@ -171,7 +310,7 @@ ggsave("distributions_h2_10-26_trans_sig.pdf", p, width = 6, height = 6)
 
 ```{r, message = FALSE, warning = FALSE, echo = FALSE}
 
-mr_genes <- fread("/gpfs/space/GI/eQTLGen/freeze2/eqtl_mapping/input/mr_GenesToInclude_2023-07-14.txt")
+mr_genes <- fread(file.path(project_folder_location, "eQTLGen/freeze2/eqtl_mapping/input/mr_GenesToInclude_2023-07-14.txt"))
 
 res_table <- fread(input_path1, col.names=expected_column_names) %>%
     mutate(marker_gene = gene %in% mr_genes$ID)
@@ -399,4 +538,244 @@ p <- ggplot(filtered, aes(marker_gene, variance_explained, fill=p_value < 0.05))
 ggsave("violin_explained_variance_h2_11-28_trans.pdf", p, width = 4, height = 4)
 
 p <- ggplot(merged_factors)
+```
+
+```{r}
+input_path_cis <- "../output_empirical_4GenPC20ExpPC_2023-10-05_polygenic/ldsc_table_cis.txt"
+input_path_cis_constrained <- "../output_empirical_4GenPC20ExpPC_2023-10-05_polygenic/ldsc_table_constrainedcis.txt"
+input_path_trans <- "ldsc_table_trans.txt"
+input_path_gw <- "../output_empirical_4GenPC20ExpPC_2023-10-05/ldsc_table_polygenic.txt"
+
+input_path_dt_trans <- "../output_empirical_4GenPC20ExpPC_2023-10-05/delete_values_combined_trans.tsv"
+
+h2_table_cis_constrained <- fread(input_path_cis_constrained) %>%
+        mutate(marker_gene = gene_id %in% mr_genes$ID)
+h2_table_cis <- fread(input_path_cis) %>%
+        mutate(marker_gene = gene_id %in% mr_genes$ID)
+h2_table_trans <- fread(input_path_trans) %>%
+        mutate(marker_gene = gene_id %in% mr_genes$ID)
+
+delete_values_trans <- fread(input_path_dt_trans, data.table = F)
+delete_values_gw <- fread(input_path_dt_gw, data.table = F)
+
+h2_table_concat_cons <- bind_rows(list("cis_constrained" = h2_table_cis_constrained, "cis" = h2_table_cis), .id = "annot") %>%
+        mutate(h2_z = h2_obs / h2_obs_se, h2_p = pnorm(q=h2_z, lower.tail=FALSE))
+
+h2_dist_ldsc <- h2_table_concat %>% filter(!marker_gene) %>% group_by(annot) %>%
+        summarise(gamma = list(gamma_moments_of_methods(h2_obs, h2_obs_se))) %>%
+        unnest_wider(gamma) %>%
+        cross_join(tibble(h2_obs = seq(-0.001, 1, by=0.001))) %>%
+        group_by(annot) %>%
+        mutate(density = dgamma(h2_obs, scale=theta, shape=k))
+
+h2_table_summary_ldsc <- h2_table_concat_cons %>%
+        group_by(gene_id) %>%
+        filter(!is.na(h2_obs)) %>%
+        filter(n_distinct(annot) > 1) %>%
+        group_by(annot, marker_gene) %>%
+        summarise(
+                n_genes = length(unique(gene_id)),
+                mean_h2 = mean(h2_obs),
+                median_h2 = median(h2_obs),
+                h2_se = first(case_when(
+                        annot == "cis" ~ jackknife(h2_obs, mean)$jack.se,
+                        annot == "cis_constrained" ~ jackknife(h2_obs, mean)$jack.se,
+                        annot == "trans" ~
+                                ifelse(all(gene_id %in% names(delete_values_trans)),
+                                       standard_errors_gw(delete_values_trans[,c(gene_id)], mean(h2_obs)), 0),
+                        annot == "gw" ~
+                                ifelse(all(gene_id %in% names(delete_values_gw)),
+                                       standard_errors_gw(delete_values_gw[,c(gene_id)], mean(h2_obs)), 0))))
+
+proc <- h2_table_concat_2 %>% filter(!marker_gene) %>%
+        group_by(gene_id) %>%
+        filter(!is.na(h2_obs)) %>%
+        filter(n_distinct(annot) > 1)
+
+p <- ggplot(proc, aes(h2_obs, fill = run)) +
+        geom_histogram(aes(y = after_stat(density)), binwidth = 0.05, alpha = 0.5) +
+        scale_fill_manual(values = c("s-ldsc" = "#0072B2", "ldsc" = "#D55E00")) +
+        facet_wrap(vars(annot), scales="free_y", ncol = 2) +
+        coord_cartesian(ylim = c(0, 10), xlim = c(-0.2, 1)) +
+        theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
+ggsave("distributions_h2_20240206_trans.pdf", p, width = 5, height = 3)
+
+
+h2_table_concat_2_pivot <- h2_table_concat_2 %>%
+        pivot_wider(id_cols = c(run, gene_id), values_from=h2_obs, names_from=annot) %>%
+        mutate(trans = ifelse(trans < 0, 0, trans),
+               cis = ifelse(cis < 0, 0, cis),
+               trans_percentage_of_total = trans / (cis + trans))
+
+h2_table_summary_ldsc <- h2_table_concat_ldsc %>%
+        filter(annot != "trans") %>%
+        group_by(gene_id) %>%
+        filter(!is.na(h2_obs)) %>%
+        filter(n_distinct(annot) > 1) %>%
+        group_by(annot, marker_gene) %>%
+        summarise(
+                n_genes = length(unique(gene_id)),
+                mean_h2 = mean(h2_obs),
+                median_h2 = median(h2_obs),
+                h2_se = first(case_when(
+                        annot == "cis" ~ jackknife(h2_obs, mean)$jack.se,
+                        annot == "cis_constrained" ~ jackknife(h2_obs, mean)$jack.se,
+                        annot == "trans" ~
+                                ifelse(all(gene_id %in% names(delete_values_trans)),
+                                       standard_errors_gw(delete_values_trans[,c(gene_id)], mean(h2_obs)), 0),
+                        annot == "gw" ~
+                                ifelse(all(gene_id %in% names(delete_values_gw)),
+                                       standard_errors_gw(delete_values_gw[,c(gene_id)], mean(h2_obs)), 0))))
+
+
+p <- ggplot(proc2, aes(h2_obs, fill = annot)) +
+        geom_histogram(aes(y = after_stat(density)), binwidth = 0.05, alpha = 0.5) +
+        scale_fill_manual(values = c("cis" = "#0072B2", "cis_constrained" = "#D55E00")) +
+        coord_cartesian(ylim = c(0, 10), xlim = c(-0.2, 1.2)) +
+        theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
+ggsave("distributions_h2_20240206_cis.pdf", p, width = 5, height = 3)
+
+```
+
+# Lead effects
+
+```{r}
+input_path_polygenic <- "output_empirical_4GenPC20ExpPC_2023-10-05_polygenic/ldsc_table_polygenic.txt"
+input_path_cis <- "output_empirical_4GenPC20ExpPC_2023-10-05_polygenic/ldsc_table_cis.txt"
+input_path_trans <- "output_empirical_4GenPC20ExpPC_2023-10-05_polygenic/ldsc_table_trans.txt"
+
+input_path_dt_trans <- "output_empirical_4GenPC20ExpPC_2023-10-05_polygenic/delete_values_combined_trans.tsv"
+input_path_dt_polygenic <- "output_empirical_4GenPC20ExpPC_2023-10-05_polygenic/delete_values_combined_polygenic.tsv"
+
+h2_table_polygenic <- fread(input_path_polygenic) %>%
+        mutate(marker_gene = gene_id %in% mr_genes$ID)
+h2_table_cis <- fread(input_path_cis) %>%
+        mutate(marker_gene = gene_id %in% mr_genes$ID)
+h2_table_trans <- fread(input_path_trans) %>%
+        mutate(marker_gene = gene_id %in% mr_genes$ID)
+
+delete_values_polygenic <- fread(input_path_dt_polygenic, data.table = F)
+delete_values_trans <- fread(input_path_dt_trans, data.table = F)
+
+lead_effects <- fread("output_empirical_4GenPC20ExpPC_2023-10-05_polygenic/lead_effect_variants_with_variance_explained.txt") %>%
+        mutate(annot = ifelse(cis, "cis_lead_effects", "trans_lead_effects")) %>%
+        group_by(phenotype, annot) %>%
+        summarise(sum_variance_explained = sum(variance_explained)) %>%
+        rename(c("gene_id" = "phenotype")) %>%
+        ungroup() %>%
+        pivot_wider(id_cols = gene_id, values_from = sum_variance_explained, names_from=annot) %>%
+        full_join(h2_table_polygenic) %>%
+        mutate(cis_lead_effects = ifelse(is.na(cis_lead_effects), 0, cis_lead_effects),
+               trans_lead_effects = ifelse(is.na(trans_lead_effects), 0, trans_lead_effects)) %>%
+        select(gene_id, cis_lead_effects, trans_lead_effects) %>%
+        pivot_longer(c(cis_lead_effects, trans_lead_effects), values_to = "h2_obs", names_to = "annot") %>%
+        mutate(marker_gene = gene_id %in% mr_genes$ID)
+
+
+
+h2_table_concat_poly <- bind_rows(list("cis" = h2_table_cis, "trans" = h2_table_trans, "polygenic" = h2_table_polygenic), .id = "annot") %>%
+        bind_rows(lead_effects) %>%
+        mutate(h2_z = h2_obs / h2_obs_se, h2_p = pnorm(q=h2_z, lower.tail=FALSE))
+
+h2_dist_ldsc <- h2_table_concat %>% filter(!marker_gene) %>% group_by(annot) %>%
+        summarise(gamma = list(gamma_moments_of_methods(h2_obs, h2_obs_se))) %>%
+        unnest_wider(gamma) %>%
+        cross_join(tibble(h2_obs = seq(-0.001, 1, by=0.001))) %>%
+        group_by(annot) %>%
+        mutate(density = dgamma(h2_obs, scale=theta, shape=k))
+
+h2_table_summary_3 <- h2_table_concat_poly2 %>% group_by(annot, marker_gene) %>%
+        summarise(
+                n_genes = length(unique(gene_id)),
+                mean_h2 = mean(h2_obs),
+                median_h2 = median(h2_obs),
+                mean_h2_a = mean(as.double(ACE_A)))
+                h2_se = first(case_when(
+                        annot == "cis" ~ jackknife(h2_obs, mean)$jack.se,
+                        annot == "trans" ~
+                                ifelse(all(gene_id %in% names(delete_values_trans)),
+                                       standard_errors_gw(delete_values_trans[,c(gene_id)], mean(h2_obs)), 0),
+                        annot == "polygenic" ~
+                                ifelse(all(gene_id %in% names(delete_values_polygenic)),
+                                       standard_errors_gw(delete_values_polygenic[,c(gene_id)], mean(h2_obs)), 0))))
+
+proc3 <- h2_table_concat_poly %>%
+        filter(!marker_gene) %>%
+        group_by(gene_id) %>%
+        filter(!is.na(h2_obs)) %>%
+        pivot_wider(id_cols = c(gene_id), values_from=c(h2_obs), names_from = annot) %>%
+        mutate(polygenic_and_trans_eQTL = polygenic + trans_lead_effects) %>%
+        pivot_longer(c(cis, trans, polygenic, polygenic_and_trans_eQTL), values_to="h2_obs", names_to="annot")
+
+
+p <- ggplot(proc3, aes(h2_obs)) +
+        geom_histogram(aes(y = after_stat(density)), binwidth = 0.05) +
+        facet_wrap(vars(annot), scales="free_y", ncol = 2) +
+        coord_cartesian(ylim = c(0, 10), xlim = c(-0.2, 1)) +
+        theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
+ggsave("distributions_h2_20240206_polygenic.pdf", p, width = 5, height = 3)
+
+
+```
+
+
+```{r}
+input_path_polygenic <- "output_empirical_4GenPC20ExpPC_2024-03-03_INTERVAL/ldsc_table_polygenic.txt"
+input_path_cis <- "output_empirical_4GenPC20ExpPC_2024-03-03_INTERVAL/ldsc_table_cis.txt"
+input_path_trans <- "output_empirical_4GenPC20ExpPC_2024-03-03_INTERVAL/ldsc_table_trans.txt"
+
+input_path_dt_trans <- "output_empirical_4GenPC20ExpPC_2024-03-03_INTERVAL/delete_values_combined_trans.tsv"
+input_path_dt_polygenic <- "output_empirical_4GenPC20ExpPC_2024-03-03_INTERVAL/delete_values_combined_polygenic.tsv"
+
+h2_table_polygenic_interval <- fread(input_path_polygenic) %>%
+        mutate(marker_gene = gene_id %in% mr_genes$ID)
+h2_table_cis_interval <- fread(input_path_cis) %>%
+        mutate(marker_gene = gene_id %in% mr_genes$ID)
+h2_table_trans_interval <- fread(input_path_trans) %>%
+        mutate(marker_gene = gene_id %in% mr_genes$ID)
+
+delete_values_polygenic_interval <- fread(input_path_dt_polygenic, data.table = F)
+delete_values_trans_interval <- fread(input_path_dt_trans, data.table = F)
+
+h2_table_concat_interval <- bind_rows(list("cis" = h2_table_cis_interval, "trans" = h2_table_trans_interval, "polygenic" = h2_table_polygenic_interval), .id = "annot")
+h2_table_concat_poly <- bind_rows(list("cis" = h2_table_cis, "trans" = h2_table_trans, "polygenic" = h2_table_polygenic), .id = "annot")
+
+interval_vs_meta <- bind_rows(list(meta = h2_table_concat_poly, interval = h2_table_concat_interval), .id = "cohorts")
+
+h2_table_summarised_interval <- interval_vs_meta %>%
+    group_by(gene_id, annot) %>%
+    filter(n() == 2) %>%
+    group_by(marker_gene, annot, cohorts) %>%
+         summarise(
+                 n_genes = length(unique(gene_id)),
+                 mean_h2 = mean(h2_obs),
+                 median_h2 = median(h2_obs),
+                 h2_se = first(
+                    case_when(
+                        annot == "cis" ~ jackknife(h2_obs, mean)$jack.se,
+                        annot == "trans" & cohorts == "meta" ~
+                             ifelse(all(gene_id %in% names(delete_values_trans)),
+                                    standard_errors_gw(delete_values_trans[,c(gene_id)], mean(h2_obs)), 0),
+                        annot == "polygenic" & cohorts == "meta" ~
+                             ifelse(all(gene_id %in% names(delete_values_polygenic)),
+                                    standard_errors_gw(delete_values_polygenic[,c(gene_id)], mean(h2_obs)), 0),
+                        annot == "trans" & cohorts == "interval" ~
+                             ifelse(all(gene_id %in% names(delete_values_trans_interval)),
+                                     standard_errors_gw(delete_values_trans_interval[,c(gene_id)], mean(h2_obs)), 0),
+                        annot == "polygenic" & cohorts == "interval" ~
+                             ifelse(all(gene_id %in% names(delete_values_polygenic_interval)),
+                                     standard_errors_gw(delete_values_polygenic_interval[,c(gene_id)], mean(h2_obs)), 0))))
+
+p <- ggplot(h2_table_concat_poly_interval %>% pivot_longer(cols=c("h2_obs_meta", "h2_obs_interval"), values_to="h2_obs", names_to="analysis") %>% filter(annot != "polygenic", !marker_gene), aes(h2_obs, fill = analysis)) +
+        geom_histogram(aes(y = after_stat(density)), binwidth = 0.05) +
+        facet_wrap(vars(annot), scales="free_y", ncol = 2) +
+        coord_cartesian(ylim = c(0, 10), xlim = c(-0.2, 1)) +
+        theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), legend.position="bottom")
+
+ggsave("distributions_h2_20240303_polygenic_vs_interval.pdf", p, width = 5, height = 4)
+
+
 ```
