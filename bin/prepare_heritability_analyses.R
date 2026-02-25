@@ -160,7 +160,7 @@ main <- function(argv = NULL) {
   # For every gene, extract the variants of interest
   for (gene in gene_ref_df$gene_id) {
     gene_data <- gene_ref_df %>% filter(gene_id == gene)
-    qtl_variants_focal_gene <- unlist(qtl_variants %>% filter(phenotype == gene) %>% pull(variants_id))
+    qtl_variants_focal_gene <- unlist(qtl_variants %>% filter(phenotype == gene) %>% pull(variant_id))
 
     cis_variants <- unlist(gene_data$cis_variants)
     trans_variants <- unlist(gene_data$trans_variants)
