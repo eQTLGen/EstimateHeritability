@@ -127,7 +127,7 @@ main <- function(argv = NULL) {
       lead_end = bp + polygenic_window)
 
   lead_bed_file <- "polygenic.bed"
-  write_bed(lead_trans_effects, lead_bed_file, start_col = "lead_start", end_col = "lead_end")
+  write_bed(lead_trans_effects, lead_bed_file, start_col = "lead_start", end_col = "lead_end", gene_col = "phenotype")
 
   qtl_variants <- get_variants_in_qtl_windows(lead_trans_effects, hm3_variant_ref)
 
