@@ -6,7 +6,6 @@ library(arrow)
 library(tidyverse)
 library(data.table)
 library(argparse)
-library(rtracklayer)
 
 
 # Declare constants
@@ -76,7 +75,7 @@ main <- function(argv = NULL) {
   args <- parser$parse_args(argv)
 
   # Gene reference
-  gene_ref <- rtracklayer::import("/Users/cawarmerdam/Documents/projects/eQTLGen/public_data/Homo_sapiens.GRCh38.106.gtf.gz")
+  gene_ref <- fread(args$gene_reference)
 
   # eQTL dataset
   eqtl_ds <- arrow::open_dataset(args$input)
@@ -94,14 +93,15 @@ main <- function(argv = NULL) {
 
   # Save gene reference as df
   gene_ref_df <- as.data.frame(gene_ref) %>%
-    filter(type == "gene", gene_id %in% genes) %>%
-    select(gene_id, start, end, seqnames, gene_name) %>%
-    filter(seqnames %in% c(1:22, "X", "Y", "XY", "MT")) %>%
-    mutate(chromosome = as.integer(case_when(seqnames == "X" ~ "23",
-                                seqnames == "Y" ~ "24",
-                                seqnames == "XY" ~ "25",
-                                seqnames == "MT" ~ "26",
-                                TRUE ~ as.character(seqnames))))
+    filter(gene_id %in% genes) %>%
+    select(gene_id, start, end, seqid, gene_name) %>%
+    filter(seqid %in% c(1:22, "X", "Y", "XY", "MT")) %>%
+    mutate(chromosome = as.integer(case_when(
+      seqid == "X" ~ "23",
+      seqid == "Y" ~ "24",
+      seqid == "XY" ~ "25",
+      seqid == "MT" ~ "26",
+      TRUE ~ as.character(seqid))))
 
   # For every gene, get the cis-window, trans-window
   gene_windows <- gene_ref_df %>%
