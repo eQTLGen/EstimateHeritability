@@ -176,6 +176,8 @@ main <- function(argv = NULL) {
     mean_sample_size <- mean(summary_stats$sample_size, na.rm=T)
     sd_sample_size <- sd(summary_stats$sample_size, na.rm=T)
     max_sample_size <- max(summary_stats$sample_size, na.rm=T)
+    print(mean_sample_size)
+    print(max_sample_size)
 
     summary_stats <- summary_stats %>% filter(between(sample_size, max_sample_size * 0.95, max_sample_size + 1))
 
