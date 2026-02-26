@@ -84,7 +84,7 @@ main <- function(argv = NULL) {
   genes <- args$genes
 
   # Variant list
-  variant_dt <- fread(args$variant_list, col.names = c("variant"))
+  variant_dt <- fread(args$variant_list, col.names = c("variant"), header=F)
 
   # Variant reference
   variant_reference <- arrow::read_parquet(args$variant_reference)
@@ -174,10 +174,10 @@ main <- function(argv = NULL) {
     print(summary_stats)
 
     mean_sample_size <- mean(summary_stats$sample_size, na.rm=T)
-      sd_sample_size <- sd(summary_stats$sample_size, na.rm=T)
-      max_sample_size <- max(summary_stats$sample_size, na.rm=T)
+    sd_sample_size <- sd(summary_stats$sample_size, na.rm=T)
+    max_sample_size <- max(summary_stats$sample_size, na.rm=T)
 
-    summary_stats <- summary_stats %>% filter(between(sample_size, mean_sample_size * 0.9, mean_sample_size * 1.1))
+    summary_stats <- summary_stats %>% filter(between(sample_size, max_sample_size * 0.95, max_sample_size + 1))
 
     trans_summary_stats <- summary_stats %>% filter(variant_index %in% trans_variants) %>%
       select(all_of(ldsc_selector))
