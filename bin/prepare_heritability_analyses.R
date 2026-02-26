@@ -194,9 +194,9 @@ main <- function(argv = NULL) {
     print(nrow(polygenic_summary_stats))
     print(nrow(summary_stats))
 
-    fwrite(trans_summary_stats, sprintf("%s.sumstats_hm3.trans_all.csv.gz", gene), row.names = FALSE)
-    fwrite(polygenic_summary_stats, sprintf("%s.sumstats_hm3.trans_polygenic.csv.gz", gene), row.names = FALSE)
-    fwrite(summary_stats %>% select(all_of(ldsc_selector)), sprintf("%s.sumstats_hm3.gw_polygenic.csv.gz", gene), row.names = FALSE)
+    fwrite(trans_summary_stats, sprintf("%s.sumstats_hm3.trans_all.csv.gz", gene), sep=" ", row.names = FALSE)
+    fwrite(polygenic_summary_stats, sprintf("%s.sumstats_hm3.trans_polygenic.csv.gz", gene), sep=" ", row.names = FALSE)
+    fwrite(summary_stats %>% select(all_of(ldsc_selector)), sprintf("%s.sumstats_hm3.gw_polygenic.csv.gz", gene), sep=" ", row.names = FALSE)
   }
 
   # Annotate those variants that
