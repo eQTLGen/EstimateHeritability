@@ -128,7 +128,7 @@ process ProcessResults {
 
 
 process PrepareHeritabilityEstimation {
-    scratch false
+    scratch true
 
     input:
         path input
