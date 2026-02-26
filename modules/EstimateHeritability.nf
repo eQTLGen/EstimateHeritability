@@ -174,9 +174,10 @@ process EstimateTransHeritabilityLdsc {
       path ld_ch
       path frqfile_ch
       path weights_ch
+      val annot
 
     output:
-      tuple val(gene), val("trans"), path('*_h2.log'), path('*_h2.delete')
+      tuple val(gene), val(annot), path('*_h2.log'), path('*_h2.delete')
 
     shell:
     '''

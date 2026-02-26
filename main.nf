@@ -134,10 +134,10 @@ workflow {
 
     // Run Heritability estimates
     ldsc_trans_output_ch = EstimateTransHeritabilityLdsc(
-        ldsc_trans_in_ch, ld_ch, frqfile_ch, weights_ch)
+        ldsc_trans_in_ch, ld_ch, frqfile_ch, weights_ch, "trans")
 
     ldsc_polygenic_output_ch = EstimatePolyHeritabilityLdsc(
-        ldsc_polygenic_in_ch, ld_ch, frqfile_ch, weights_ch)
+        ldsc_polygenic_in_ch, ld_ch, frqfile_ch, weights_ch, "polygenic")
 
     // Process LDSC logs
     ldsc_trans_matrices_ch = ProcessTransLdscOutput(ldsc_trans_output_ch)
