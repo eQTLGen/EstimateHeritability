@@ -280,21 +280,24 @@ process GwasBySubtraction {
 }
 
 process ProcessLdscOutput {
+
     publishDir "${params.output}", mode: 'copy', pattern: '*_h2.txt'
 
     input:
-      tuple val(gene), val(annot), path(ldsc_output)
+      val batch
 
     output:
       path '*_h2.txt'
 
-    shell:
-    // Should first limit to the trans variants
-    '''
-    process_ldsc_output.R !{gene} !{annot} !{ldsc_output}
-    '''
-}
+    script:
+    def commands = batch.collect { gene, annot, ldsc_output ->
+        "process_ldsc_output.R ${gene} ${annot} ${ldsc_output}"
+    }.join('\n')
 
+    """
+    ${commands}
+    """
+}
 
 process ProcessLdscDeleteVals {
     publishDir "${params.output}", mode: 'copy', pattern: 'delete_values_combined_*.tsv'

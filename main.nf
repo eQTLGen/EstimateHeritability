@@ -140,9 +140,9 @@ workflow {
         ldsc_polygenic_in_ch, ld_ch, frqfile_ch, weights_ch, "polygenic")
 
     // Process LDSC logs
-    ldsc_trans_matrices_ch = ProcessTransLdscOutput(ldsc_trans_output_ch)
+    ldsc_trans_matrices_ch = ProcessTransLdscOutput(ldsc_trans_output_ch.collate(50)
         .collectFile(name:'ldsc_table_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
-    ldsc_polygenic_matrices_ch = ProcessGwLdscOutput(ldsc_polygenic_output_ch)
+    ldsc_polygenic_matrices_ch = ProcessGwLdscOutput(ldsc_polygenic_output_ch.collate(50)
         .collectFile(name:'ldsc_table_polygenic.txt', skip: 1, keepHeader: true, storeDir: params.output)
 
     // Process LDSC stuff
