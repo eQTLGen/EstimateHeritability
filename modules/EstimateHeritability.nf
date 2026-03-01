@@ -284,16 +284,15 @@ process ProcessLdscOutput {
     publishDir "${params.output}", mode: 'copy', pattern: '*_h2.txt'
 
     input:
-      tuple batch
+      tuple val(gene), val(annot), path(ldsc_output)
 
     output:
       path '*_h2.txt'
 
     script:
-    def commands = batch.collect { gene, annot, ldsc_output ->
-        "process_ldsc_output.R ${gene} ${annot} ${ldsc_output}"
+    def commands = gene.indices.collect { i ->
+        "process_ldsc_output.R ${gene[i]} ${annot[i]} ${ldsc_output[i]}"
     }.join('\n')
-
     """
     ${commands}
     """
