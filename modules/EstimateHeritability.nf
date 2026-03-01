@@ -284,7 +284,7 @@ process ProcessLdscOutput {
     publishDir "${params.output}", mode: 'copy', pattern: '*_h2.txt'
 
     input:
-      val batch
+      tuple batch
 
     output:
       path '*_h2.txt'
