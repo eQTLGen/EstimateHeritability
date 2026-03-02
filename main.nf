@@ -135,26 +135,44 @@ workflow {
     // Run Heritability estimates
     ldsc_trans_output_ch = EstimateTransHeritabilityLdsc(
         ldsc_trans_in_ch, ld_ch, frqfile_ch, weights_ch, "trans")
+        .collate(50, remainder: true)
+        .map { batch ->
+            tuple(
+                batch*.getAt(0),
+                batch*.getAt(1),
+                batch*.getAt(2),
+                batch*.getAt(3)
+            )
+        }
 
     ldsc_polygenic_output_ch = EstimatePolyHeritabilityLdsc(
         ldsc_polygenic_in_ch, ld_ch, frqfile_ch, weights_ch, "polygenic")
+        .collate(50, remainder: true)
+        .map { batch ->
+            tuple(
+                batch*.getAt(0),
+                batch*.getAt(1),
+                batch*.getAt(2),
+                batch*.getAt(3)
+            )
+        }
 
     // Process LDSC logs
-    ldsc_trans_matrices_ch = ProcessTransLdscOutput(ldsc_trans_output_ch.collate(50).map { batch -> batch.transpose() })
+    ldsc_trans_matrices_ch = ProcessTransLdscOutput(ldsc_trans_output_ch)
         .collectFile(name:'ldsc_table_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
-    ldsc_polygenic_matrices_ch = ProcessGwLdscOutput(ldsc_polygenic_output_ch.collate(50).map { batch -> batch.transpose() })
+    ldsc_polygenic_matrices_ch = ProcessGwLdscOutput(ldsc_polygenic_output_ch)
         .collectFile(name:'ldsc_table_polygenic.txt', skip: 1, keepHeader: true, storeDir: params.output)
 
     // Process LDSC stuff
-    ProcessLdscDeleteVals(
-        ldsc_trans_output_ch.map { name, gws, file, del -> name }.collect(),
-        ldsc_trans_output_ch.map { name, gws, file, del -> del }.collect(),
-        ldsc_trans_matrices_ch, "trans")
+    //ProcessLdscDeleteVals(
+    //    ldsc_trans_output_ch.map { name, gws, file, del -> name }.collect(),
+    //    ldsc_trans_output_ch.map { name, gws, file, del -> del }.collect(),
+    //    ldsc_trans_matrices_ch, "trans")
 
-    ProcessLdscDeleteValsGw(
-        ldsc_polygenic_output_ch.map { name, gws, file, del -> name }.collect(),
-        ldsc_polygenic_output_ch.map { name, gws, file, del -> del }.collect(),
-        ldsc_polygenic_matrices_ch, "polygenic")
+    //ProcessLdscDeleteValsGw(
+    //    ldsc_polygenic_output_ch.map { name, gws, file, del -> name }.collect(),
+    //    ldsc_polygenic_output_ch.map { name, gws, file, del -> del }.collect(),
+    //    ldsc_polygenic_matrices_ch, "polygenic")
 
     //WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
 }
