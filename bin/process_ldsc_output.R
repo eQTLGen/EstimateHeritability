@@ -52,6 +52,7 @@ read_ldsc_logs <- function(filepath) {
   correlation_table <- NULL
   sumstats <- c()
   current_sumstats <- ""
+  n_variants <- c()
 
   error <- FALSE
 
@@ -66,6 +67,10 @@ read_ldsc_logs <- function(filepath) {
     if (startsWith(line, "Reading summary statistics from")) {
       match <- str_match(line, "Reading summary statistics from (.+) ...")
       sumstats <- c(sumstats, match[2])
+
+    } else if (startsWith(line, "Read summary statistics for")) {
+      match <- str_match(line, "Read summary statistics for (\d+) SNPs.")
+      n_variants[sumstats[1]] <- match[2]
 
     } else if (startsWith(line, "Total Observed scale h2")) {
       current_sumstats <- sumstats[1]
@@ -111,7 +116,7 @@ read_ldsc_logs <- function(filepath) {
     rename("se" = "stderr") %>%
     pivot_wider(id_cols = p1, values_from = c("estimate", "se"), names_from = "name", names_glue = "{name}_{.value}") %>%
     rename_with(~str_remove(., '_estimate')) %>%
-    mutate(p2 = p1)
+    mutate(p2 = p1, n_variants = n_variants[p1])
 
   if (is.null(correlation_table)) {
     return(heritability_table)

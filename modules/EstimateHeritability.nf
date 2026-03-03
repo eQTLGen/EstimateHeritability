@@ -282,8 +282,6 @@ process GwasBySubtraction {
 
 process ProcessLdscOutput {
 
-    publishDir "${params.output}", mode: 'copy', pattern: '*_h2.txt'
-
     input:
       tuple val(gene), val(annot), path(ldsc_output), path(ldsc_delete_vals)
 
