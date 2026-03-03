@@ -304,7 +304,6 @@ process ProcessLdscDeleteVals {
     input:
       val gene
       path ldsc_delete_vals
-      path ldsc_matrix
       val annot
 
     output:
@@ -313,6 +312,6 @@ process ProcessLdscDeleteVals {
     shell:
     // Should first limit to the trans variants
     '''
-    process_delete_vals.R --delete-vals !{ldsc_delete_vals.join(' ')} --genes !{gene.join(' ')} --h2 !{ldsc_matrix} --out 'delete_values_combined_!{annot}.tsv'
+    process_delete_vals.R --delete-vals !{ldsc_delete_vals.join(' ')} --genes !{gene.join(' ')} --out 'delete_values_combined_!{annot}.tsv'
     '''
 }

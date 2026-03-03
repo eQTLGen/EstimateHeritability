@@ -166,15 +166,13 @@ workflow {
         .collectFile(name:'ldsc_table_polygenic.txt', skip: 1, keepHeader: true, storeDir: params.output)
 
     // Process LDSC stuff
-    //ProcessLdscDeleteVals(
-    //    ldsc_trans_output_ch.map { name, gws, file, del -> name }.collect(),
-    //    ldsc_trans_output_ch.map { name, gws, file, del -> del }.collect(),
-    //    ldsc_trans_matrices_ch, "trans")
+    ProcessLdscDeleteVals(
+        ldsc_trans_output_ch.map { name, gws, file, del -> name }.collect(),
+        ldsc_trans_output_ch.map { name, gws, file, del -> del }.collect(), "trans")
 
-    //ProcessLdscDeleteValsGw(
-    //    ldsc_polygenic_output_ch.map { name, gws, file, del -> name }.collect(),
-    //    ldsc_polygenic_output_ch.map { name, gws, file, del -> del }.collect(),
-    //    ldsc_polygenic_matrices_ch, "polygenic")
+    ProcessLdscDeleteValsGw(
+        ldsc_polygenic_output_ch.map { name, gws, file, del -> name }.collect(),
+        ldsc_polygenic_output_ch.map { name, gws, file, del -> del }.collect(), "polygenic")
 
     //WriteOutRes(heritability_estimates.collectFile(name:'result.txt', sort: true, keepHeader: true))
 }
