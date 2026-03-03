@@ -114,27 +114,23 @@ workflow {
         .map { file ->
                def gene = file.name.toString().tokenize('.').get(0)
                return tuple(gene, file) }
-        .sort { a, b -> a[0] <=> b[0] }
 
     trans_ch = PrepareHeritabilityEstimation.out.sumstats_trans
         .flatten()
         .map { file ->
                def gene = file.name.toString().tokenize('.').get(0)
                return tuple(gene, file) }
-        .sort { a, b -> a[0] <=> b[0] }
 
     // Heritability SNPs
     ldsc_trans_in_ch = PrepareHeritabilityEstimation.out.trans_variants.collectFile(sort: true)
         .splitCsv(header:false, sep:'\t')
         .map { row -> return tuple(row[0], row[1]) }
         .join(trans_ch, by:[0], remainder:false)
-        .sort { a, b -> a[0] <=> b[0] }
 
     ldsc_polygenic_in_ch = PrepareHeritabilityEstimation.out.transpolygenic_variants.collectFile(sort: true)
         .splitCsv(header:false, sep:'\t')
         .map { row -> return tuple(row[0], row[1]) }
         .join(polygenic_ch, by:[0], remainder:false)
-        .sort { a, b -> a[0] <=> b[0] }
 
     // Run Heritability estimates
     ldsc_trans_output_ch = EstimateTransHeritabilityLdsc(
