@@ -69,7 +69,7 @@ read_ldsc_logs <- function(filepath) {
       sumstats <- c(sumstats, match[2])
 
     } else if (startsWith(line, "Read summary statistics for")) {
-      match <- str_match(line, "Read summary statistics for (\d+) SNPs.")
+      match <- str_match(line, "Read summary statistics for (\\d+) SNPs.")
       n_variants[sumstats[1]] <- match[2]
 
     } else if (startsWith(line, "Total Observed scale h2")) {
