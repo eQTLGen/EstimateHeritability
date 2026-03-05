@@ -32,12 +32,12 @@ main <- function(argv = NULL) {
 
   args <- parser$parse_args(argv)
 
-  delete_values <- do.call(cbind, lapply(args$delete_vals, function(path) {
+  delete_values <- t(do.call(cbind, lapply(args$delete_vals, function(path) {
     fread(path, header=F)$V1
-  }))
+  })))
 
   #ensemble_ids <- str_extract(args$delete_vals, "ENSG\\d+")
-  colnames(delete_values) <- args$genes
+  rownames(delete_values) <- args$genes
 
   write.table(delete_values, args$out, quote=F, sep="\t", row.names=F, col.names=T)
 }
