@@ -281,36 +281,19 @@ process GwasBySubtraction {
 }
 
 process ProcessLdscOutput {
+    publishDir "${params.output}", mode: 'copy', pattern: 'ldsc_table_combined_*.tsv'
+    publishDir "${params.output}", mode: 'copy', pattern: 'delete_values_combined_*.tsv'
 
     input:
       tuple val(gene), val(annot), path(ldsc_output), path(ldsc_delete_vals)
 
     output:
-      path '*_h2.txt'
+      path 'ldsc_table_combined_*.tsv', emit: h2_table
+      path 'delete_values_combined_*.tsv' emit: delete_vals_table
 
     script:
-    def commands = gene.indices.collect { i ->
-        "process_ldsc_output.R ${gene[i]} ${annot[i]} ${ldsc_output[i]}"
-    }.join('\n')
     """
-    ${commands}
-    """
-}
-
-process ProcessLdscDeleteVals {
-    publishDir "${params.output}", mode: 'copy', pattern: 'delete_values_combined_*.tsv'
-
-    input:
-      val gene
-      path ldsc_delete_vals
-      val annot
-
-    output:
-      path 'delete_values_combined_*.tsv'
-
-    shell:
-    // Should first limit to the trans variants
-    '''
+    process_ldsc_output.R --genes !{gene.join(' ')} --ldsc-logs !{ldsc_output.join(' ')} --out 'ldsc_table_combined_!{annot}.tsv'
     process_delete_vals.R --delete-vals !{ldsc_delete_vals.join(' ')} --genes !{gene.join(' ')} --out 'delete_values_combined_!{annot}.tsv'
-    '''
+    """
 }

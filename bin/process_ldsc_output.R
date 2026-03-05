@@ -135,24 +135,25 @@ main <- function(argv = NULL) {
     argv <- commandArgs(trailingOnly = T)
   }
 
-  gene_id <- argv[1]
-  annot <- argv[2]
-  ldsc_log <- argv[3]
+  parser <- ArgumentParser(description='process ldsc logs')
+  # Basic LD Score Estimation Flags'
+  # Filtering / Data Management for LD Score
+  parser$add_argument('--out', type="character",
+                      help='output')
+  parser$add_argument('--genes', type="character",
+                      nargs="+")
+  parser$add_argument('--ldsc-logs', default=NULL, type="character", nargs="+")
+  args <- parser$parse_args(argv)
 
   # Process input
-  table_proc <- read_ldsc_logs(ldsc_log)
+  processed_tables <- mapply(function(ldsc_log, gene) {
+    table_proc <- read_ldsc_logs(ldsc_log) %>%
+      mutate(gene_id = gene)
+    return(table_proc)
+  }, args$ldsc_logs, args$genes, SIMPLIFY=F, USE.NAMES = F)
 
-  if (!is.null(table_proc)) {
-
-    processed_table <- table_proc %>%
-      mutate(gene_id = gene_id,
-             annot = annot)
-
-    # Process output
-    write.table(processed_table, sprintf("ldsc_matrix_%s_%s_h2.txt", gene_id, annot), col.names = T, row.names = F, sep = "\t", quote = F)
-  } else {
-    write.table(c(""), sprintf("ldsc_matrix_%s_%s_h2.txt", gene_id, annot), col.names = F, row.names = F, sep = "\t", quote = F)
-  }
+  # Process output
+  write.table(bind_rows(processed_tables), args$out, col.names = T, row.names = F, sep = "\t", quote = F)
 }
 
 if (sys.nframe() == 0 && !interactive()) {
