@@ -293,7 +293,7 @@ process ProcessLdscOutput {
 
     script:
     """
-    process_ldsc_output.R --genes ${gene.join(' ')} --ldsc-logs ${ldsc_output.join(' ')} --out 'ldsc_table_combined_${annot}.tsv'
-    process_delete_vals.R --delete-vals ${ldsc_delete_vals.join(' ')} --genes ${gene.join(' ')} --out 'delete_values_combined_${annot}.tsv'
+    process_ldsc_output.R --genes ${gene.join(' ')} --ldsc-logs ${ldsc_output.join(' ')} --out 'ldsc_table_combined_${annot[0]}.tsv'
+    process_delete_vals.R --delete-vals ${ldsc_delete_vals.join(' ')} --genes ${gene.join(' ')} --out 'delete_values_combined_${annot[0]}.tsv'
     """
 }
