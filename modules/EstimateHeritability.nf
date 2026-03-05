@@ -289,7 +289,7 @@ process ProcessLdscOutput {
 
     output:
       path 'ldsc_table_combined_*.tsv', emit: h2_table
-      path 'delete_values_combined_*.tsv' emit: delete_vals_table
+      path 'delete_values_combined_*.tsv', emit: delete_vals_table
 
     script:
     """
