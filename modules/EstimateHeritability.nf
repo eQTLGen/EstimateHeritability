@@ -281,9 +281,6 @@ process GwasBySubtraction {
 }
 
 process ProcessLdscOutput {
-    publishDir "${params.output}", mode: 'copy', pattern: 'ldsc_table_combined_*.tsv'
-    publishDir "${params.output}", mode: 'copy', pattern: 'delete_values_combined_*.tsv'
-
     input:
       tuple val(gene), val(annot), path(ldsc_output), path(ldsc_delete_vals)
 
