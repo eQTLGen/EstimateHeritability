@@ -170,7 +170,7 @@ process EstimateTransHeritabilityLdsc {
     tag "ldsc_${annot}_${gene}"
     cache 'lenient'
     stageInMode 'copy'
-    scratch 'ram-disk'
+    scratch true
 
     input:
       tuple val(gene), val(m_5_50), path(sumstats)
@@ -184,6 +184,8 @@ process EstimateTransHeritabilityLdsc {
 
     shell:
     '''
+    export PYTHONUNBUFFERED='1'
+
     zcat !{sumstats} | awk 'BEGIN{FS="\t"; OFS=FS} $2 != "0.0" ' > !{gene}.csv
 
     /ldsc/ldsc.py \
