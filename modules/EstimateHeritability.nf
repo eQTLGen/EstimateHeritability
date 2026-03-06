@@ -169,6 +169,8 @@ process EstimateTransHeritabilityLdsc {
     container 'quay.io/cawarmerdam/ldsc:v0.3'
     tag "ldsc_${annot}_${gene}"
     cache 'lenient'
+    stageInMode 'copy'
+    scratch 'ram-disk'
 
     input:
       tuple val(gene), val(m_5_50), path(sumstats)
