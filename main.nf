@@ -131,7 +131,7 @@ workflow {
         .splitCsv(header:false, sep:'\t')
         .map { row -> return tuple(row[0], row[1]) }
         .join(polygenic_ch, by:[0], remainder:false)
-//
+
 //     // Run Heritability estimates
 //     ldsc_trans_output_ch = EstimateTransHeritabilityLdsc(
 //         ldsc_trans_in_ch, ld_ch, frqfile_ch, weights_ch, "trans")
@@ -162,15 +162,15 @@ workflow {
     // Process LDSC logs
 //     processed_trans_output_ch = ProcessTransLdscOutput(ldsc_trans_output_buffered_ch)
     processed_polygenic_output_ch = ProcessGwLdscOutput(ldsc_polygenic_output_buffered_ch)
-//
+
 //     processed_trans_output_ch.h2_table
 //       .collectFile(name:'ldsc_table_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
 //     processed_trans_output_ch.h2_table
 //       .collectFile(name:'ldsc_delete_vals_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
 
-    processed_trans_output_ch.h2_table
+    processed_polygenic_output_ch.h2_table
     .collectFile(name:'ldsc_table_polygenic.txt', skip: 1, keepHeader: true, storeDir: params.output)
-    processed_trans_output_ch.h2_table
+    processed_polygenic_output_ch.h2_table
     .collectFile(name:'ldsc_delete_vals_polygenic.txt', skip: 1, keepHeader: true, storeDir: params.output)
 
     // Process LDSC stuff
