@@ -115,36 +115,36 @@ workflow {
                def gene = file.name.toString().tokenize('.').get(0)
                return tuple(gene, file) }
 
-    trans_ch = PrepareHeritabilityEstimation.out.sumstats_trans
-        .flatten()
-        .map { file ->
-               def gene = file.name.toString().tokenize('.').get(0)
-               return tuple(gene, file) }
+//     trans_ch = PrepareHeritabilityEstimation.out.sumstats_trans
+//         .flatten()
+//         .map { file ->
+//                def gene = file.name.toString().tokenize('.').get(0)
+//                return tuple(gene, file) }
 
     // Heritability SNPs
-    ldsc_trans_in_ch = PrepareHeritabilityEstimation.out.trans_variants.collectFile(sort: true)
-        .splitCsv(header:false, sep:'\t')
-        .map { row -> return tuple(row[0], row[1]) }
-        .join(trans_ch, by:[0], remainder:false)
+//     ldsc_trans_in_ch = PrepareHeritabilityEstimation.out.trans_variants.collectFile(sort: true)
+//         .splitCsv(header:false, sep:'\t')
+//         .map { row -> return tuple(row[0], row[1]) }
+//         .join(trans_ch, by:[0], remainder:false)
 
     ldsc_polygenic_in_ch = PrepareHeritabilityEstimation.out.transpolygenic_variants.collectFile(sort: true)
         .splitCsv(header:false, sep:'\t')
         .map { row -> return tuple(row[0], row[1]) }
         .join(polygenic_ch, by:[0], remainder:false)
+//
+//     // Run Heritability estimates
+//     ldsc_trans_output_ch = EstimateTransHeritabilityLdsc(
+//         ldsc_trans_in_ch, ld_ch, frqfile_ch, weights_ch, "trans")
 
-    // Run Heritability estimates
-    ldsc_trans_output_ch = EstimateTransHeritabilityLdsc(
-        ldsc_trans_in_ch, ld_ch, frqfile_ch, weights_ch, "trans")
-
-    ldsc_trans_output_buffered_ch = ldsc_trans_output_ch.collate(50)
-        .map { batch ->
-            tuple(
-                batch*.getAt(0),
-                batch*.getAt(1),
-                batch*.getAt(2),
-                batch*.getAt(3)
-            )
-        }
+//     ldsc_trans_output_buffered_ch = ldsc_trans_output_ch.collate(50)
+//         .map { batch ->
+//             tuple(
+//                 batch*.getAt(0),
+//                 batch*.getAt(1),
+//                 batch*.getAt(2),
+//                 batch*.getAt(3)
+//             )
+//         }
 
     ldsc_polygenic_output_ch = EstimatePolyHeritabilityLdsc(
         ldsc_polygenic_in_ch, ld_ch, frqfile_ch, weights_ch, "polygenic")
@@ -160,13 +160,13 @@ workflow {
         }
 
     // Process LDSC logs
-    processed_trans_output_ch = ProcessTransLdscOutput(ldsc_trans_output_buffered_ch)
+//     processed_trans_output_ch = ProcessTransLdscOutput(ldsc_trans_output_buffered_ch)
     processed_polygenic_output_ch = ProcessGwLdscOutput(ldsc_polygenic_output_buffered_ch)
-
-    processed_trans_output_ch.h2_table
-      .collectFile(name:'ldsc_table_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
-    processed_trans_output_ch.h2_table
-      .collectFile(name:'ldsc_delete_vals_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
+//
+//     processed_trans_output_ch.h2_table
+//       .collectFile(name:'ldsc_table_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
+//     processed_trans_output_ch.h2_table
+//       .collectFile(name:'ldsc_delete_vals_trans.txt', skip: 1, keepHeader: true, storeDir: params.output)
 
     processed_trans_output_ch.h2_table
     .collectFile(name:'ldsc_table_polygenic.txt', skip: 1, keepHeader: true, storeDir: params.output)
